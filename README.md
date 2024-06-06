@@ -11,29 +11,51 @@ Treatments correspond to samples that were infected with a coctail of a Gram pos
 
 Analysis was performed in R studio using the packages:
 
-apeglm
-ape
-Biostrings
-DESeq2
-circlize
-clusterProfiler
-ComplexHeatmap
-CorLevelPlot
-corrplot
-dplyr
-ggplot2
-ggrepel
-ggtree
-ggVennDiagram
-GO.db
-gridExtra
-phangorn
-pheatmap
-RColorBrewer
-tidyr
-tidyverse
-treeio
-WGCNA
+-apeglm
+
+-ape
+
+-Biostrings
+
+-DESeq2
+
+-circlize
+
+-clusterProfiler
+
+-ComplexHeatmap
+
+-CorLevelPlot
+
+-corrplot
+
+-dplyr
+
+-ggplot2
+
+-ggrepel
+
+-ggtree
+
+-ggVennDiagram
+
+-GO.db
+
+-gridExtra
+
+-phangorn
+
+-pheatmap
+
+-RColorBrewer
+
+-tidyr
+
+-tidyverse
+
+-treeio
+
+-WGCNA
 
 
 
