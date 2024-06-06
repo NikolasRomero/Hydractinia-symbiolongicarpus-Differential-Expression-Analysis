@@ -1,61 +1,8 @@
 # Hydractinia symbiolongicarpus Differential Expression Analysis
-Hydractinia symbiolongicarpus Differential Expression Analysis from RNA seq Data on R
+Hydractinia symbiolongicarpus is an hydroid from the Hydractinidae family it belongs to the phyllum cnidaria and its one of the few sésile medusozoans that do not develop into the medusa phase
 
-10 samples of RNA seq sata where used to perform this analysis
+![Logo](https://keep.google.com/u/2/media/v2/1aJNEmAkY2hIPkOPwoj35REhfHaPwQAXT3fqCqoELHkQ425xSHezVabBsb1S9jw/12-aAFnsXWGBEn0GjpHb0eYnVSd_F_kv7yD3Jpw-X1A6fE2lPCk1c2V0zbd3YDQM?sz=512&accept=image%2Fgif%2Cimage%2Fjpeg%2Cimage%2Fjpg%2Cimage%2Fpng%2Cimage%2Fwebp)
 
-Data was divided into controls and treatments
+Trying to aim the immune response to both Gram negative and Gram positive bacteria RNA-seq data from an immune challenge was generated 
 
-Controls correspond to samples that were not infected with bacteria an only with pasteurized artifitial sea water
-
-Treatments correspond to samples that were infected with a coctail of a Gram positive (Microccocus luteus) and a Gram negative (Vibrio fischeri) bacteria
-
-Analysis was performed in R studio using the packages:
-
--apeglm
-
--ape
-
--Biostrings
-
--DESeq2
-
--circlize
-
--clusterProfiler
-
--ComplexHeatmap
-
--CorLevelPlot
-
--corrplot
-
--dplyr
-
--ggplot2
-
--ggrepel
-
--ggtree
-
--ggVennDiagram
-
--GO.db
-
--gridExtra
-
--phangorn
-
--pheatmap
-
--RColorBrewer
-
--tidyr
-
--tidyverse
-
--treeio
-
--WGCNA
-
-
-
+Here we explain the step by step From the coutns generation to a phyllogenetic analysis
