@@ -1,0 +1,43 @@
+## Load packages
+
+library(DESeq2)
+library(apeglm)
+
+## Create DESeq object
+## From the previous folder proceeding results
+dds <- DESeqDataSetFromMatrix(countData = mcounts, colData = metadata, design = ~ condition)
+
+## Size factors estimation
+dds <- estimateSizeFactors(dds)
+dds
+sizeFactors(dds)
+
+## Plot the distributions
+head(counts(dds,normalized=TRUE))
+boxplot(counts(dds,normalized=TRUE),las=2)
+
+## Differential expression analysis
+
+## "Wald" test for two conditions
+dds <- DESeq(dds, test="Wald")
+
+## Create a results object
+res <- results(dds)
+resultsNames(dds)
+
+## Plot the results stats
+plotDispEsts(dds)
+
+## MA plot
+plotMA(res, ylim=c(-6,10))
+abline(h=c(-2,2), col="#FF2400", lwd=2)
+
+## Shrikage
+resLFC <- lfcShrink(dds, coef="condition_Treatment_vs_Control", type="apeglm")
+
+## MA plot after shrinkage
+plotMA(resLFC, ylim=c(-6,10))
+abline(h=c(-2,2), col="#FF2400", lwd=2)
+Padj=data.frame(p=res$padj[resLFC$padj<0.95])
+ggplot(Padj, aes(x=p)) + geom_histogram(breaks = seq(0,0.95,0.05)) +
+  labs(y='frecuencia') + scale_x_continuous(breaks = seq(0,0.95,0.05))
