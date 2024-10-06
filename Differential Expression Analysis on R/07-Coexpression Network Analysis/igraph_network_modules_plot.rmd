@@ -1,0 +1,31 @@
+## Network modulkes plotting in igraph to better visual identification of module relationships
+
+## Extract module correlations
+module_correlations <- cor(module_eigengenes)
+print(module_correlations)
+
+## Define threshold and creat adjacency matriz
+cor_threshold <- 0.5 
+adjacency_matrix <- (abs(module_correlations) > cor_threshold) * 1
+diag(adjacency_matrix) <- 0
+
+## Plot
+g <- graph.adjacency(adjacency_matrix, mode = "undirected", diag = FALSE)
+
+module_names <- colnames(module_eigengenes)
+cleaned_module_names <- gsub(pattern = "ME", replacement = "", x = module_names)
+
+
+V(g)$name <- cleaned_module_names
+V(g)$color <- cleaned_module_names
+V(g)$label.color <- "black"
+
+layout <- layout_with_kk(g)
+
+plot(g, layout = layout,
+     vertex.size = 10,
+     vertex.label.cex = 0.8,
+     vertex.label.dist = -1,
+     vertex.label.degree = pi/2,
+     vertex.label = V(g)$name, 
+     vertex.color = V(g)$color)
