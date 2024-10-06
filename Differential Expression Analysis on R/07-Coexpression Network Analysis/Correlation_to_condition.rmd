@@ -1,0 +1,53 @@
+## Correlation and significance analysis for modules
+
+##Load packages
+library(CorrLevelPlot)
+library(dplyr)
+library(tidyverse)
+
+## rename metadata
+colData <- metadata
+
+## Transfrom coldata into a binary matrix
+traits <- colData %>%
+  mutate(Treatment = ifelse(grepl("Treatment", condition), 1, 0)) %>%
+  dplyr::select(2)
+
+traits2 <- colData %>%
+  mutate(Control = ifelse(grepl("Control", condition), 1, 0)) %>%
+  dplyr::select(2)
+
+nsamples <- nrow(tcounts)
+ngenes <- ncol(tcounts)
+
+## Correlation of modules in case needed
+module_trair_corr <- cor(module_eigengenes, traits, use = 'p')
+module_trair_corr_p <- corPvalueStudent(module_trair_corr, nsamples)
+
+## Add binary factors to ME's
+heatmap_data <- merge(module_eigengenes, traits, by = 'row.names')
+head(heatmap_data)
+
+heatmap.data <- merge(module_eigengenes, traits2, by = 'row.names')
+head(heatmap.data)
+
+heatmap.data <- heatmap.data[, c("Row.names", "Control")]
+
+heatmap_data <- merge(heatmap_data, heatmap.data, by = 'Row.names')
+
+heatmap_data <- heatmap_data %>%
+  column_to_rownames(var = 'Row.names')
+names(heatmap_data)
+
+## Plot correlation and significance of modules with condition
+CLP <- CorLevelPlot(heatmap_data,
+             x = names(heatmap_data)[28:29],
+             y = names(heatmap_data)[1:27],
+             col = c("blue", "skyblue", "ivory", "pink", "red"))
+
+## Calculate correlation and membership
+module_membership_measure <- cor(module_eigengenes, tcounts, use = 'p')
+module_membership_measure_pvals <- corPvalueStudent(module_membership_measure, nsamples)
+
+gene_signf_cor <- cor(tcounts, traits$state_bin, use = 'p')
+gene_signf_cor_pvals <- corPvalueStudent(gene_signf_cor, nsamples)
