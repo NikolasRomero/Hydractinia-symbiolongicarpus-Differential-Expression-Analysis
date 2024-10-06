@@ -30,6 +30,14 @@ GSEA_GO_dot_labeled <- ggdraw() +
 GO_combined_plot <- cowplot::plot_grid(EA_GO_dot_labeled, GSEA_GO_dot_labeled, ncol = 2, rel_widths = c(1, 1))
 
 ## Merge plots
+
+## Load packages
+
+## some of those packages functions intefere with custerProfiler functions so i recomend to load them sepparatly
+library(cowplot)
+library(vegan)
+
+## Merge
 EA_dot <- ggdraw() +
   draw_plot(xx_dot) +
   draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
