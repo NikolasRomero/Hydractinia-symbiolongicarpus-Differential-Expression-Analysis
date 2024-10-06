@@ -2,6 +2,7 @@
 
 library(DESeq2)
 library(apeglm)
+library(ggplo2)
 
 ## Create DESeq object
 ## From the previous folder proceeding results
@@ -41,3 +42,12 @@ abline(h=c(-2,2), col="#FF2400", lwd=2)
 Padj=data.frame(p=res$padj[resLFC$padj<0.95])
 ggplot(Padj, aes(x=p)) + geom_histogram(breaks = seq(0,0.95,0.05)) +
   labs(y='frecuencia') + scale_x_continuous(breaks = seq(0,0.95,0.05))
+
+
+## Order by FDR
+resOrdered <- res[order(res$padj),]
+resOrdered
+
+## Select significant genes
+resSig <- subset(res, padj < 0.05)
+
