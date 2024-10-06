@@ -1,0 +1,80 @@
+## Statistical filtering from count matix or DESeq object
+
+## Load Packages
+library(DESeq2)
+library(dplyr)
+library(tidyverse)
+library(WGCNA)
+
+## Transpose count matrix 
+gsg <- goodSamplesGenes(t(mcounts))
+summary(gsg)
+gsg$allOK
+table(gsg$goodGenes)
+table(gsg$goodSamples)
+
+## Deseq object creation altertatively extracted from previous DESeq object
+Wdds <- DESeqDataSetFromMatrix(countData = mcounts,
+                              colData = metadata,
+                              design = ~ 1)
+
+## Filter to remove genes with counts <15 on 75% of the samples
+Wdds75 <- Wdds[rowSums(counts(Wdds) >= 15) >= 0.75,]
+nrow(Wdds75)
+
+## Normalization rlog or vst
+Wdds_norm <- rlog(Wdds75)
+
+## Transposed normalized counts
+tcounts <- assay(Wdds_norm) %>% 
+           t()
+## Soft power selection for network generation
+power <- c(c(1:10), seq(from = 12, to = 30, by = 2))
+
+sft <- pickSoftThreshold(tcounts,
+                         powerVector = power,
+                         verbose = 5)
+sft_data <- as.data.frame(sft$fitIndices)
+
+par(mfrow = c(1, 2))
+
+cex1 = 0.9
+
+plot(
+  sft$fitIndices[, 1],
+  -sign(sft$fitIndices[, 3]) * sft$fitIndices[, 2],
+  ylim = c(0,1),
+  xlab = "Soft Threshold (power)",
+  ylab = "Scale Free Topology Model Fit,signed R^2",
+  pch = ".",
+  main = paste("Scale independence")
+)
+
+text(
+  sft$fitIndices[, 1],
+  -sign(sft$fitIndices[, 3]) * sft$fitIndices[, 2],
+  pos = 3,
+  labels = power,
+  cex = cex1,
+  col = "darkred"
+)
+
+abline(h = 0.85, col = "#f5443b")
+abline(h = 0.9, col = "#9bf725")
+
+plot(
+  sft$fitIndices[, 1],
+  sft$fitIndices[, 5],
+  xlab = "Soft Threshold (power)",
+  ylab = "Mean Connectivity",
+  pch = ".",
+  main = paste("Mean connectivity")
+)
+text(
+  sft$fitIndices[, 1],
+  sft$fitIndices[, 5],
+  labels = power,
+  pos = 3,
+  cex = cex1,
+  col = "darkred"
+)
