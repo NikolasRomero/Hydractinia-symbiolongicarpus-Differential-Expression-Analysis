@@ -1,0 +1,30 @@
+## Sequence extraction from proteome and export
+
+## Load package
+
+library(biostrings)
+
+## Load proteome .faa file from NCBI genome reeplace PATH_TO/protein.faa fopr your actual file
+fastap <- "PATH_TO/protein.faa"
+
+## Load the proteome as string set
+protein_sequences <- readAAStringSet(fastap)
+
+## Extract protein_id's from DEG's annotate file
+pids <- degs$protein_id
+
+## Extrac protein names from proteome
+sequence_names <- names(protein_sequences)
+
+## Adjust the sequence names
+extracted_pids <- gsub("^([^ ]+) .*", "\\1", sequence_names)
+
+## Match modified sequence names with protein ids
+matching_indices <- match(pids, extracted_pids)
+
+## Extract the sequences
+selected_proteins <- protein_sequences[matching_indices]
+
+## Import the sequences
+Interpro_degs <- "Interpro_degs.fasta"
+writeXStringSet(selected_proteins, file = Interpro_degs)
