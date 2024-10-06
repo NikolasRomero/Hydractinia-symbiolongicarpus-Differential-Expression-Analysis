@@ -1,1 +1,0 @@
-Here you'll find two codes one for take the HISAT2 output files and run HT-seq count to generate a counts file for each sample and another to take the files and merge them into a unique matrix with all the genes present across the samples
