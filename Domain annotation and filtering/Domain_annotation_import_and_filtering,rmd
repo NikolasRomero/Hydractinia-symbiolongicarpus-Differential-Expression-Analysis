@@ -1,0 +1,59 @@
+## Annotation import nd data filtering by enrichment analysis and GSEA results
+
+## Load packages
+library(dplyr)
+
+## InterProScan results import from tsv file reeplace PATH_TO_FILE or your actual file path
+InterPro_IDs <- read.delim("PATH_TO_FILE", row.names = NULL, header = FALSE)
+
+## Rename columns
+Interpro_colnames <- c("Protein_id", "MD5_digest", "lenght", "db", "db_id", "description", "start_location", "stop_location", "score", "status", "date", "Interpro_IDs", "domain_name", "Interpro_GO_IDs", "GO_name")
+colnames(InterPro_IDs) <- Interpro_colnames
+
+## Select relevant columns 
+domains <- InterPro_IDs[, c("Protein_id", "db", "db_id", "description", "Interpro_IDs", "domain_name")]
+
+## Select relevant columns from Degs results
+id2seq <- degs[, c("gene_id", "GeneID", "protein_id")]
+
+## Save EA and GSEA results as a copy and remove rownames
+
+EA2dom <- EA_GO_df
+rownames(ko2dom) <- NULL
+GSEA2dom <- GSEA_GO_df
+rownames(go2dom) <- NULL
+
+## Select relevant GO categories for both results files
+rows_EA_GO <- c(4, 5, 7, 8, 9, 10, 11, 12, 13)
+rows_GSEA_GO <- c(4, 5, 6, 7, 8, 9, 10, 11, 13, 12, 14, 15)
+
+## Separe and extract gene_id's from our results saved files
+EA_GO_rows <- EA2dom[rows_EA_GO, "geneID"]
+combined_values_EA <- paste(EA_GO_rows, collapse = "/")
+split_values_EA <- unlist(strsplit(combined_values_EA, "/"))
+go2domains_EA <- unique(split_values_EA)
+
+GSEA_GO_rows <- GSEA2dom[rows_GSEA_GO, "core_enrichment"]
+combined_values_GSEA <- paste(GSEA_GO_rows, collapse = "/")
+split_values_GSEA <- unlist(strsplit(combined_values_GSEA, "/"))
+go2domains_GSEA <- unique(split_values_GSEA)
+
+## Merge both files
+merge_go2domains <- union(go2domains_GSEA, go2domains_EA)
+
+## Extract rows from DEG's results 
+id2prot <- id2seq[id2seq$GeneID %in% merge_go2domains, ]
+
+## Extract domains from InterProScan results
+interesting_domains <- domains[domains$Protein_id %in% id2prot$protein_id, ]
+
+## Separete into clasification categoies in oir case annotated enriched, annotated unenriched and unannotated
+annotated_degs <- annotated_degs %>% 
+  mutate(GeneID = as.character(GeneID))
+
+unannotated_degs <- anti_join(degs, annotated_degs, by = "GeneID")
+unanotated_domains <- domains[domains$Protein_id %in% unannotated_degs$protein_id, ]
+
+unenriched_genes <- anti_join(annotated_degs, id2prot, by = "GeneID")
+unenriched_ids <- degs[degs$GeneID %in% no_enriched_genes$GeneID, ]
+unenriched_domains <- domains[domains$Protein_id %in% no_enriched_ids$protein_id, ]
