@@ -1,0 +1,42 @@
+## Related modules interesting domain containing proteins extraction and export to excel
+
+## Lad packages
+library(plyr)
+library(openxlsx)
+
+## Function to extract multiple modules from net
+get_multiple_modules <- function(module_colors) {
+  all_genes <- data.frame()
+  for (color in module_colors) {
+    module_genes <- module_gene_mapping %>%
+                    filter(`bwnet$colors` == color)
+    module2degs <- rownames(module_genes)
+    genes <- degs[degs$gene_id %in% module2degs, ]
+    genes$ModuleColor <- color
+    all_genes <- rbind(all_genes, genes)
+  }
+  return(all_genes)
+}
+
+related_modules <- c("green", "turquoise", "cyan", "yellow")
+selected_modules_genes <- get_multiple_modules(related_modules)
+
+## Filter domain list by only relevant modules
+filter_by_module <- function(lst, df_column) {
+  filtered_list <- lapply(lst, function(x) {
+    x[x %in% df_column]
+  })
+  filtered_list <- filtered_list[sapply(filtered_list, length) > 0]
+  
+  return(filtered_list)
+}
+
+
+filtered_list <- filter_by_module(merged_list, selected_modules_genes$protein_id)
+
+new_extracted_list <- extract_rows(filtered_list, domains)  
+
+## Save as excel
+xlsfile <- "related_domains.xlsx"
+
+save_as_excel(new_extracted_list, xlsfile)
