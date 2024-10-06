@@ -1,0 +1,35 @@
+## WGCNA network generation usign transposed counts and  soft power
+
+## Load packages
+library(WGCNA)
+
+## Data preparation
+tcounts[] <- sapply(tcounts, as.numeric)
+soft_power <- 20
+temp_cor <- cor
+cor <- WGCNA::cor
+
+## Network generation
+bwnet <- blockwiseModules(tcounts,
+                 maxBlockSize = 15000,
+                 TOMType = "signed",
+                 power = soft_power,
+                 mergeCutHeight = 0.25,
+                 numericLabels = FALSE,
+                 randomSeed = 1234,
+                 saveTOMs = TRUE,
+                 verbose = 3)
+
+## Network data
+cor <- temp_cor
+module_eigengenes <- bwnet$MEs
+head(module_eigengenes)
+table(bwnet$colors)
+
+## Plot network dendrogram
+plotDendroAndColors(bwnet$dendrograms[[1]], bwnet$colors,
+                    c("unmerged", "merged"),
+                    dendroLabels = FALSE,
+                    addGuide = TRUE,
+                    hang= 0.03,
+                    guideHang = 0.05)
