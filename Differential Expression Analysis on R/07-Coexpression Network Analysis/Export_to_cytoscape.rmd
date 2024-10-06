@@ -1,0 +1,22 @@
+## Export Network to Cytoscape for better visualization
+
+## Load Packages
+library(WGCNA)
+
+## Save TOM matrix
+adjMat <- as.matrix(TOM)
+
+## Create edges and nodes files
+edgeFile <- "Input-edges.txt"
+nodeFile <- "Input-nodes.txt"
+
+## Export
+exportNetworkToCytoscape(adjMat,
+                         edgeFile = edgeFile,
+                         nodeFile = nodeFile,
+                         weighted = TRUE,
+                         threshold = 0.25,
+                         nodeNames = dimnames(adjMat)[[1]],
+                         altNodeNames = NULL,
+                         nodeAttr = bwnet$colors,
+                         includeColNames = TRUE)
