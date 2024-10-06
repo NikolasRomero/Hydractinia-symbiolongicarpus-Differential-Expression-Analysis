@@ -41,3 +41,10 @@ abline(h=c(-2,2), col="#FF2400", lwd=2)
 Padj=data.frame(p=res$padj[resLFC$padj<0.95])
 ggplot(Padj, aes(x=p)) + geom_histogram(breaks = seq(0,0.95,0.05)) +
   labs(y='frecuencia') + scale_x_continuous(breaks = seq(0,0.95,0.05))
+
+## Normalization and boxplot
+## rlog or vst normalization
+rld <- rlog(dds, blind=FALSE)
+
+#Boxplot
+boxplot(assay(rld), pch=20, las=2)
