@@ -1,12 +1,14 @@
 ## Load packages
 library(ComplexHeatmap)
 library(corrplot)
+library(cowplot)
 library(dplyr)
 library(ggplot2)
 library(pheatmap)
 library(RColorBrewer)
 library(tidyr)
 library(tidyverse)
+library(vegan)
 
 ## Correlation plot
 
