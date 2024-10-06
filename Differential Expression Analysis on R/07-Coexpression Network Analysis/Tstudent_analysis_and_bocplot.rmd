@@ -1,0 +1,98 @@
+## t-student correlation and significance for coexpression network modules
+
+## Load pakcages
+library(cowplot)
+library(vegan)
+
+## T student test apply function
+t_condition <- factor(conditions)
+t_test_results <- list()
+for (module in colnames(module_eigengenes)) {
+ 
+  t_test <- t.test(module_eigengenes[[module]] ~ t_condition)
+    t_test_results[[module]] <- t_test
+}
+
+t_test_results
+
+## Boxplot plotting function
+box_colors <- c("#0099FF", "#FF0090")
+
+for (module in colnames(module_eigengenes)) {
+  eigengene_values <- module_eigengenes[[module]]
+  
+  boxplot(eigengene_values ~ t_condition,
+          main = paste(module),
+          xlab = "Condition",
+          ylab = "Eigengene Value",
+          col = NULL,
+          border = box_colors,
+          outline = TRUE)
+  p_value <- t_test_results[[module]]$p.value
+  text(x = 1.5, y = max(eigengene_values), 
+       labels = paste("T-test, p =", round(p_value, 3)), 
+       col = "black")
+}
+
+## Relevant modules bocplot plotting
+box_modules <- c("MEgreen", "MEturquoise", "MEcyan", "MEyellow", "MEblue", "MEpink", "MEbrown", "MEblack")
+par(mfrow = c(2, 4))
+
+for (module in box_modules) {
+  eigengene_values <- module_eigengenes[[module]]
+  boxplot(eigengene_values ~ t_condition,
+          main = paste(module),
+          xlab = "Condition",
+          ylab = "Eigengene Value",
+          col = NULL,
+          border = box_colors,
+          outline = TRUE)
+  p_value <- t_test_results[[module]]$p.value
+  text(x = 1.5, y = max(eigengene_values), 
+       labels = paste("T-test, p =", round(p_value, 3)), 
+       col = "black")
+}
+
+## Supllementary modules boxplot plotting
+sup_modules_a <- c("MEgreenyellow", "MEpurple", "MEdarkturquoise", "MEblack", "MEmagenta", "MElightyellow", "MEdarkgreen", "MEorange", "MElightgreen", "MEtan")
+
+par(mfrow = c(2, 5))
+
+for (module in sup_modules_a) {
+  eigengene_values <- module_eigengenes[[module]]
+  boxplot(eigengene_values ~ t_condition,
+          main = paste(module),
+          xlab = "Condition",
+          ylab = "Eigengene Value",
+          col = NULL,
+          border = box_colors,
+          outline = TRUE)
+  p_value <- t_test_results[[module]]$p.value
+  text(x = 1.5, y = max(eigengene_values), 
+       labels = paste("T-test, p =", round(p_value, 3)), 
+       col = "black")
+}
+
+sup_modules_b <- c("MEdarkred", "MEgrey60", "MEmidnightblue", "MEdarkgrey", "MElightcyan", "MEroyalblue", "MEsalmon", "MEred", "MEdarkorange", "MEgrey")
+
+par(mfrow = c(2, 5))
+
+for (module in sup_modules_b) {
+  eigengene_values <- module_eigengenes[[module]]
+  boxplot(eigengene_values ~ t_condition,
+          main = paste(module),
+          xlab = "Condition",
+          ylab = "Eigengene Value",
+          col = NULL,
+          border = box_colors,
+          outline = TRUE)
+  p_value <- t_test_results[[module]]$p.value
+  text(x = 1.5, y = max(eigengene_values), 
+       labels = paste("T-test, p =", round(p_value, 3)), 
+       col = "black")
+}
+
+
+
+
+
