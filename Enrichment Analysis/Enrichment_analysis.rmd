@@ -1,0 +1,51 @@
+## Enrichment analysis and GSEA
+
+## Load Packages
+
+library(clusterProfiler)
+
+## Enrichmnt analysis and GSEA
+
+## Data preparation
+
+## Term2name and term2name variable cration
+term2gene=gaf[, c("GO_ID", "GeneID")]
+term2name=terms_to_GO[, c("GO_ID", "GO_Term")]
+
+## Gene list for enrichment analysis
+cluster_degs = degs[, "log2FoldChange"]
+names(cluster_degs) = as.character(degs[, "GeneID"])
+
+## Gene sorted list for GSEA
+genes <- names(cluster_degs)[abs(cluster_degs) > 0.5]
+sorted_genes = sort(cluster_degs, decreasing = TRUE)
+
+## Enrichment anlysis and GSEA
+EA_GO = enricher(genes, TERM2GENE = term2gene, TERM2NAME = term2name)
+GSEA_GO = GSEA(sorted_genes, TERM2GENE = term2gene, TERM2NAME = term2name)
+
+EA_GO_df <- as.data.frame(EA_GO)
+GSEA_GO_df <- as.data.frame(GSEA_GO)
+
+## KEGG enrichment analysis and GSEA
+EA_KEGG <- enrichKEGG(gene = genes, 
+                 organism = "hsy",
+                 keyType = "kegg",
+                 pvalueCutoff = 0.05,
+                 pAdjustMethod = "BH",
+                 qvalueCutoff = 0.2,
+                 use_internal_data = FALSE)
+EA_KEGG_df <- as.data.frame(EA_KEGG)
+
+GSEA_KEGG <- gseKEGG(geneList = sorted_genes,
+               organism = 'hsy',
+               pvalueCutoff = 0.05,
+               verbose  = FALSE,
+               use_internal_data = FALSE)
+GSEA_KEGG_df <- as.data.frame(GSEA_KEGG)
+
+M_KEGG <- enrichMKEGG(gene = genes,
+                   organism = 'hsy',
+                   pvalueCutoff = 0.05,
+                   qvalueCutoff = 0.2)
+M_KEGG_df <- as.data.frame(M_KEGG)
