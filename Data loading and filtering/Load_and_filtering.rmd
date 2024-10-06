@@ -1,0 +1,34 @@
+## Load the count matrix from a tsv file
+
+##Reeplace "PATH_TO_FILE" with your actual file path
+crude_matrix <- read.delim("PATH_TO_FILE", row.names = 1)
+
+##In case you need to select only some of the columns of this file
+counts <- crude_matrix[, c("C1", "C2", "C3", "C4", "C5", "T1", "T2", "T3", "T4", "T5")]
+
+## Data filtering
+
+##Remove genes with high counts >100000
+mcounts=counts[1e5>apply(counts,1,max),]
+
+##Remove genes with 0 counts
+mcounts=mcounts[0<apply(mcounts[,1:10],1,var),]
+
+##Save in case to need it
+fakecounts <- mcounts 
+
+##Removes genes with low counts >15 on 75% of the data set
+mcounts <- mcounts[rowMeans(mcounts >= 15) >= 0.75, ]
+
+## Making Coldata
+
+##Mkae the Coldata dataframe
+conditions <- factor(c(rep("Control", 5), rep("Treatment", 5)))
+metadata <- data.frame(condition = conditions)
+
+#Add the rownames
+names <- c("C1", "C2", "C3", "C4", "C5", "T1", "T2", "T3", "T4", "T5")
+rownames(metadata) <- names
+
+#Verify all it's OK
+all(rownames(metadata) == colnames(mcounts))
