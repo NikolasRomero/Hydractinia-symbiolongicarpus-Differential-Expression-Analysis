@@ -1,0 +1,66 @@
+## EXtract relevant domains from InterProScan results for the threee selected categories
+
+## Function to domain extraction for number of rows, the rows and unique protein_id's
+process_terms <- function(terms_names, terms, table, columns) {
+  results <- list()
+  
+  for (j in seq_along(columns)) {
+    column <- columns[j]
+    
+    for (i in seq_along(terms)) {
+      term <- terms[i]
+      term_name <- terms_names[i]
+      
+      count <- length(grep(term, table[[column]], ignore.case = TRUE))
+      
+      rows <- table[grepl(term, table[[column]], ignore.case = TRUE), ]
+      
+      unique_vals <- unique(rows$Protein_id)
+      
+      results[[paste0(term_name, "_count_", column)]] <- count
+      results[[paste0(term_name, "_rows_", column)]] <- rows
+      results[[paste0("unique_", term_name, "_", column)]] <- unique_vals
+    }
+  }
+  
+  return(results)
+}
+
+## List of relevant domain terms in our case immunity
+terms <- c("A2M", "^ABD", "ACT[,_ -]", "Actinoporin", "Acropora", "ADAR", "Adhesion", "^Ago", "AIM2", "ALR", "Anemone", "Antibacterial", "Antibiotic", "Antimicrobial", "Ankyrin", "AP-1",
+ "Apopto", "Arabinose", "ASC[- ,_]", "ATF", "Aurel", "B2M", "Bacterial", "Bactericidal", "BGRP", "BPI", "Bradykinin", "bZIP", "^C-type", "^C3[- ,_]", "^C5[- ,_]", "C8", "Calponin", "^CAM",
+ "CAP ", "CARD", "Caspase", "CCL", "CD36", "CD94", "CETP", "Chemokine", "Chitin", "Clathrin", "Clec", "CLR", "Cnid", "Coagulation", "Complement[- ,]", "Coral", "CSF", "CTL", "CUB", "CXC",
+ "cys.*knot", "Cysteine.*Rich", "Cytokine", "Cytolysin", "Cytotoxic", "Damage", "DAMP", "Dbl[- ,_]", "DEAD", "Death", "Defensin", "DExD/H", "^DH[- ,_]", "Dicer", "Drosha", "EF-", "EGF",
+ "^ERK", "FA58C", "Fibrinogen", "Fibronectin", "FIIND", "Flagellin", "flg", "FN3", "FNIII", "FOS", "FTP", "Fucos", "Fungal", "Galactos", "GFRCR", "^GK", "Glucan", "Glycoside.*Hydrolase",
+ "Glycosyl", "GPCR", "Granzyme", "Guanylate.*kinase", "Heat.*Shock", "Helicase", "HIN-200", "Histamine", "HLA", "HSP", "Hyaline", "Hydra ", "Hydrolase", "Hyr[- ,_]", "^Ig[- ,_]", "IKK",
+ "Immune", "Immunity", "Immunoglobulin", "Integrin", "Interferon", "INF", "Interleukin", "IRAK", "IRG", "IPT[- ,]", "IPS", "^IQ", "ITAM[- ,_]", "ITIM[- ,_]", "JAK", "JNK", "JUN[- ,_]",
+ "Kallikrein", "Kazal", "KIR", "LamG", "Laminin", "LBP", "LDL", "Lectin", "Leucine.*Rich", "leukin", "LGP", "Lipopolysaccharide", "Lipoprotein", "Litaf", "LRR", "Lymphoid", "Lyzosyme",
+ "Mannose", "MAP K", "MAPK", "MDA5[- ,]", "Melanin", "MHC", "MIRO", "Mitogen", "Muramic", "Musin", "Myco", "MYD88", "Myeloid", "NACHT", "NB.*ARC", "Nemato", "NFAT", "NF.*Kappa", "NF-Y",
+ "^NIDO", "Nidogen", "NKAP", "NKG", "NKR", "NLR", "NOD", "OAS", "PACT", "PAMP", "PAN[- ,_] ", "PARP", "Pathogen", "Pattern", "Permeability", "Peptidoglycan", "Perforin", "PGB", "PGRP",
+ "^PH[- ,_]", "Phospholipase", "^PK", "PKR", "PLAC[- ,_]", "Plant", "^Plasmin", "Platelet", "Pleckstrin", "Plexin", "Poietin", "Pore", "PPG", "Protease", "Protein .*tyrosine", "PRR",
+ "PTK", "PTKinase", "PTP", "PYD", "Pyruvate Kinase", "Ras[- ,_]", "RBL[- ,_]", "Retinoic", "Receptor", "Receptor-like", "Rhamnos", "^Rho[_ ,-]", "RIGI", "^RIP", "RLR[- ,_]", "SAM[- ,_]",
+ "Scavenger", "SRC", "SEFIR", "Semaphorin", "SH2", "SH3", "ShKT", "SPINK", "Spondin", "SRC", "SRCR", "STAT[- ,_]", "Sushi", "TCR", "Tetramine", "TGF", "Threalose", "Thrombin", "TIL", "TIR",
+ "TLD", "TNF", "Tox-", "Toxin", "TRADD", "TRAF[- ,_]", "Transactivator", "TRBP", "Trypsin", "TSP", "Tumor", "Tyk", "Tyrosin.*ase", "TX", "Viral", "Viric", "Virus", "VWA", "VWC", "VWD", "^WD",
+ "Willebrand", "Wnt", "XCL", "ZF", "Zinc.*finger")
+
+terms_names <- c("A2M", "ABD", "ACT", "Actinoporin", "Acropora", "ADAR", "Adhesion", "Ago", "AIM2", "ALR", "Anemone", "Antibacterial", "Antibiotic", "Antimicrobial", "Ankyrin", "AP_1", "Apopto",
+ "Arabinose", "ASC", "ATF", "Aurel", "B2M", "Bacterial", "Bactericidal", "BGRP", "BPI", "Bradykinin", "bZIP", "C_type_lectins", "C3", "C5", "C8", "Calponin", "CAM", "CAP", "CARD", "Caspase", "CCL",
+ "CD36", "CD94", "CETP", "Chemokine", "Chitin", "Clathrin", "Clec", "CLR", "Cnid", "Coagulation", "Complement", "Coral", "CSF", "CTL", "CUB", "CXC", "Cysteine_knot", "Cysteine_Rich", "Cytokyne",
+ "Cytolysin", "Cytotoxic", "Damage", "DAMP", "Dbl", "DEAD", "Death", "Defensin", "DExD_H", "DH", "Dicer", "Drosha", "EF", "EGF", "ERK", "FA58C", "Fibrinogen", "Fibronectin", "FIIND", "Flagellin",
+ "flg", "FN3", "FNIII", "FOS", "FTP", "Fucos", "Fungal", "Galactose", "GFRCR", "GK", "Glucan", "Glycoside_Hydrolase", "Glycosyl", "GPCR", "Granzyme", "Guanylate_Kinase", "Heat_Shock", "Helicase",
+ "HIN", "Histamine", "HLA", "HSP", "Hyaline", "Hydra", "Hydrolase", "Hyr", "Ig", "IKK", "Immune", "Immunity", "Immunoglobulin", "Integrin", "Interferon", "INF", "Interleukin", "IRAK", "IRG", "IPT",
+ "IPS", "IQ", "ITAM", "ITIM", "JAK", "JNK", "JUN", "Kallikrein", "Kazal", "KIR", "LamG", "Laminin", "LBP", "LDL", "Lectin", "Leucine_Rich", "leukin", "LGP", "Lipopolysaccharide", "Lipoprotein",
+ "Litaf", "LRR", "Lymphoid", "Lyzosyme", "Mannose", "MAP_K", "MAPK", "MDA", "Melanin", "MHC", "MIRO", "Mitogen", "Muramic", "Musin", "Myco", "MYD88", "Myeloid", "NACHT", "NB-ARC", "Nemato", "NFAT",
+ "NF_Kappa", "NF_Y", "NIDO", "Nidogen", "NKAP", "NKG", "NKR", "NLR", "NOD", "OAS", "PACT", "PAMP", "PAN", "PARP", "Pathogen", "Pattern", "Permeability", "Peptidoglycan", "Perforin", "PGB", "PGRP",
+ "PH", "Phospholipase", "PK", "PKR", "PLAC", "Plant", "Plasmin", "Platelet", "Pleckstrin", "Plexin", "Poietin", "Pore", "PPG", "Protease", "Protein_Tyrosine", "PRR", "PTK", "PTKinase", "PTP", "PYD",
+ "Pyruvate_Kinase", "Ras", "RBL", "Retino", "Receptor", "Receptor_like", "Rhamnose", "Rho", "RIGI", "RIP", "RLR", "SAM", "Scavenger", "SRC", "SEFIR", "Semaphorin", "SH2", "SH3", "ShKT", "SPINK",
+ "Spondin", "SRC", "SRCR", "STAT", "Sushi", "TCR", "Tetramine", "TGF", "Threalose", "Thrombin", "TIL", "TIR", "TLD", "TNF", "Tox", "Toxin", "TRADD", "TRAF", "Transactivator", "TRBP", "Trypsin", "TSP",
+ "Tumor", "Tyk", "Tyrosin_ase", "TX", "Viral", "Viric", "Virus", "VWA", "VWC", "VWD", "WD", "Willebrand", "Wnt", "XCL", "ZF", "Zinc_Finger")
+
+## Columns we want to search in
+columns <- c("description", "domain_name")
+
+## Process the function for the three selkected groups
+results_unnanot <- process_terms(terms_names, terms, unnanotated_domains, columns)
+results_anot <- process_terms(terms_names, terms, interesting_domains, columns)
+results_unenriched <- process_terms(terms_names, terms, no_enriched_domains, columns)
