@@ -1,0 +1,95 @@
+## Venn plotting to identify module-DEG's and module-module shared genes
+
+## Extract gene_id's
+degs2net <- degs$gene_id
+
+## Related modules DEG's Venn plot
+venn_net_lists <- list(DEGs = degs2net, Green = green2degs, Turquoise = turquoise2degs, Cyan = cyan2degs, Yellow = yellow2degs)
+venn_net <- Venn(venn_net_lists)
+venn_net_data <- process_data(venn_net)
+venn_plot_net <- ggplot() +
+  geom_polygon(aes(X, Y, fill = name, group = id), 
+               data = venn_regionedge(venn_net_data),
+               show.legend = FALSE) +
+  geom_path(aes(X, Y, color = id, group = id), 
+            data = venn_setedge(venn_net_data), 
+            linewidth = 1,
+            show.legend = FALSE) +
+  geom_text(aes(X, Y, label = name),
+            size = 7,
+            data = venn_setlabel(venn_net_data)) +
+  geom_label(aes(X, Y, label = count),
+             size = 8,
+             data = venn_regionlabel(venn_net_data),
+             alpha = 0) +
+    scale_fill_manual(values = c("DEGs" = "#F8766D", "Green" = "#00FF00", "Turquoise" = "#40E0D0", "Cyan" = "#00FFFF", "Yellow" = "#FFFF00", "DEGs/Green" = "#7cba36", "DEGs/Turquoise" = "#9cab9e", "DEGs/Cyan" = "#7cbab6", "DEGs/Yellow" = "#fbba36", "Green/Turquoise" = "#20ef68", "Green/Cyan" = "#00ff7f", "Green/Yellow" = "#7fff00", "Turquoise/Cyan" = "#20efe7", "Turquoise/Yellow" = "#9fef68", "Cyan/Yellow" = "#7fff7f", "DEGs/Green/Turquoise" = "#5ecd83", "DEGs/Green/Cyan" = "#3edc9a", "DEGs/Green/Yellow" = "#bddc1b", "DEGs/Turquoise/Cyan" = "#4ed5ce", "DEGs/Turquoise/Yellow" = "#cdd54f", "DEGs/Cyan/Yellow" = "#bddc5b", "Green/Turquoise/Cyan" = "#10f7b3", "Green/Turquoise/Yellow" = "#8ff734", "Green/Cyan/Yellow" = "#7fff3f", "Turquoise/Cyan/Yellow" = "#8ff773", "DEGs/Green/Turquoise/Cyan" = "#4ed48e", "DEGs/Green/Turquoise/Yellow" = "#8dd44f", "DEGs/Green/Cyan/Yellow" = "#7ddc5a", "DEGs/Turquoise/Cyan/Yellow" = "#8dd58e", "Green/Turquoise/Cyan/Yellow" = "#5fef68", "DEGs/Green/Turquoise/Cyan/Yellow" = "#6ee681")) + 
+  scale_color_manual(values = c("1"= "black", "2" = "black", "3" = "black", "4" = "black")) +
+  coord_equal() +
+  theme_void() 
+
+venn_plot_net
+
+## Not-related modules DEG's Venn plot
+venn_net_neg_lists <- list(DEGs = degs2net, Blue = blue2degs, Pink = pink2degs, Brown = brown2degs)
+venn_net_neg <- Venn(venn_net_neg_lists)
+venn_net_data_neg <- process_data(venn_net_neg)
+venn_plot_net_neg <- ggplot() +
+  geom_polygon(aes(X, Y, fill = name, group = id), 
+               data = venn_regionedge(venn_net_data_neg),
+               show.legend = FALSE) +
+  geom_path(aes(X, Y, color = id, group = id), 
+            data = venn_setedge(venn_net_data_neg), 
+            linewidth = 1,
+            show.legend = FALSE) +
+  geom_text(aes(X, Y, label = name),
+            size = 7,
+            data = venn_setlabel(venn_net_data_neg)) +
+  geom_label(aes(X, Y, label = count),
+             size = 8,
+             data = venn_regionlabel(venn_net_data_neg),
+             alpha = 0) +
+    scale_fill_manual(values = c("DEGs" = "#F8766D", "Blue" = "#0000FF", "Pink" = "#FFC0CB", "Brown" = "#A52A2A", "DEGs/Blue" = "#7c3bb6", "DEGs/Pink" = "#fb9b9c", "DEGs/Brown" = "#ce504b", "Blue/Pink" = "#7f60e5", "Blue/Brown" = "#521594", "Pink/Brown" = "#7b1f5f", "DEGs/Blue/Pink" = "#bd7dc0", "DEGs/Blue/Brown" = "#903270", "DEGs/Pink/Brown" = "#831d5b", "Blue/Pink/Brown" = "#924587", "DEGs/Blue/Pink/Brown" = "#7b2d8a")) + 
+  scale_color_manual(values = c("1"= "black", "2" = "black", "3" = "black", "4" = "black")) +
+  coord_equal() +
+  theme_void() 
+
+venn_plot_net_neg
+   
+## Related and not-elated modules Vennplot
+
+turquoise_green <- union(turquoise2degs, green2degs)
+turquoise_green <- unique(turquoise_green)
+cyan_yellow <- union(cyan2degs, yellow2degs)
+cyan_yellow <- unique(cyan_yellow)
+related_degs <- union(turquoise_green, cyan_yellow)
+related_degs <- unique(related_degs)
+
+blue_pink <- union(blue2degs, pink2degs)
+blue_pink <- unique(blue_pink)
+unrelated_degs <- union(blue_pink, brown2degs)
+unrelated_degs <- unique(unrelated_degs)
+
+venn_lists_rela <- list(Related = related_degs, Unrelated = unrelated_degs)
+venn_rela <- Venn(venn_lists_rela)
+venn_data_rela <- process_data(venn_rela)
+venn_plot_rela <- ggplot() +
+  geom_polygon(aes(Y, X, fill = name, group = id), 
+               data = venn_regionedge(venn_data_rela),
+               show.legend = FALSE) +
+  geom_path(aes(Y, X, color = id, group = id), 
+            data = venn_setedge(venn_data_rela), 
+            linewidth = 1,
+            show.legend = FALSE) +
+  geom_text(aes(Y, X, label = name),
+            size = 7,
+            data = venn_setlabel(venn_data_rela)) +
+  geom_label(aes(Y, X, label = count),
+             size = 8,
+             data = venn_regionlabel(venn_data_rela),
+             alpha = 0) +
+  scale_fill_manual(values = c("Related" = "#FF0090", "Unrelated" = "#0099FF", "Related/Unrelated" = "#7f4cc7")) + 
+  scale_color_manual(values = c("1"= "black", "2" = "black")) +
+  coord_equal() +
+  theme_void() 
+
+venn_plot_rela
