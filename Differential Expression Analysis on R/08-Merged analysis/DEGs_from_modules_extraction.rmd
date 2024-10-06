@@ -1,0 +1,23 @@
+## Extract the DEG's present in relevant network modules
+
+## Load packages
+library(dplyr)
+
+## Extraction function
+get_module_genes <- function(module_color) {
+   module_genes <- module_gene_mapping %>%
+                  filter(`bwnet$colors` == module_color)
+  module2degs <- rownames(module_genes)
+  return(module2degs)
+}
+
+### Related DEG's extaction
+green2degs <- get_module_genes("green")
+turquoise2degs <- get_module_genes("turquoise")
+cyan2degs <- get_module_genes("cyan")
+yellow2degs <- get_module_genes("yellow")
+
+## Not-related DEG's extaction
+blue2degs <- get_module_genes("blue")
+pink2degs <- get_module_genes("pink")
+brown2degs <- get_module_genes("brown")
