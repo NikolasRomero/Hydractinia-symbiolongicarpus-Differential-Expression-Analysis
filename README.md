@@ -5,4 +5,4 @@ Hydractinia symbiolongicarpus is an hydroid from the Hydractinidae family it bel
 
 Trying to aim the immune response to both Gram negative and Gram positive bacteria RNA-seq data from an immune challenge was generated 
 
-Here we explain the step by step From the coutns generation to a phyllogenetic analysis
+Here we explain the step by step From the counts generation to a phyllogenetic analysis
