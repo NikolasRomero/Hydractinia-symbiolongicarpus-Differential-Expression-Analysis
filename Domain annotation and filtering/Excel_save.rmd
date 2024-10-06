@@ -1,0 +1,111 @@
+## Save in excle for better look
+
+## Load packages
+library(dplyr)
+library(openxlsx)
+
+## Select texti to remove
+text_for_list1 <- "_description"
+text_for_list2 <- "_domain_name"
+text_for_list3 <- "unique_"
+
+## Remove the text
+annot_description_i <- grep(text_for_list1, names(matching_objects_anot))
+annot_domain_name_i <- grep(text_for_list2, names(matching_objects_anot))
+
+unnannot_description_i <- grep(text_for_list1, names(matching_objects_unnanot))
+unnannot_domain_name_i <- grep(text_for_list2, names(matching_objects_unnanot))
+
+unenriched_description_i <- grep(text_for_list1, names(matching_objects_unenriched))
+unenriched_domain_name_i <- grep(text_for_list2, names(matching_objects_unenriched))
+
+## Merge into only one list
+annot_description <- matching_objects_anot[annot_description_i]
+annot_domain_name <- matching_objects_anot[annot_domain_name_i]
+
+unnannot_description <- matching_objects_unnanot[unnannot_description_i]
+unnannot_domain_name <- matching_objects_unnanot[unnannot_domain_name_i]
+
+unenriched_description <- matching_objects_unenriched[unenriched_description_i]
+unenriched_domain_name <- matching_objects_unenriched[unenriched_domain_name_i]
+
+## Remove text from rownames
+names(annot_description) <- gsub(text_for_list1, "", names(annot_description))
+names(annot_domain_name) <- gsub(text_for_list2, "", names(annot_domain_name))
+
+names(unnannot_description) <- gsub(text_for_list1, "", names(unnannot_description))
+names(unnannot_domain_name) <- gsub(text_for_list2, "", names(unnannot_domain_name))
+
+names(unenriched_description) <- gsub(text_for_list1, "", names(unenriched_description))
+names(unenriched_domain_name) <- gsub(text_for_list2, "", names(unenriched_domain_name))
+
+## Function to merge lists
+updated_matching_objects_annot <- list()
+
+for (name in names(annot_description)) {
+  updated_matching_objects_annot[[name]] <- c(annot_description[[name]], annot_domain_name[[name]])
+}
+
+updated_matching_objects_unnannot <- list()
+
+for (name in names(unnannot_description)) {
+  updated_matching_objects_unnannot[[name]] <- c(unnannot_description[[name]], unnannot_domain_name[[name]])
+}
+
+updated_matching_objects_unenriched <- list()
+
+for (name in names(unenriched_description)) {
+  updated_matching_objects_unenriched[[name]] <- c(unenriched_description[[name]], unenriched_domain_name[[name]])
+}
+
+## Merge the three lists
+merged_list <- list()
+
+for (name in names(updated_matching_objects_annot)) {
+  merged_list[[name]] <- c(
+    updated_matching_objects_annot[[name]], 
+    updated_matching_objects_unnannot[[name]], 
+    updated_matching_objects_unenriched[[name]]
+  )
+}
+
+## Remove merged list ronames text
+names(merged_list) <- gsub(text_for_list3, "", names(merged_list))
+
+original_list <- merged_list
+
+## Remove domains woth values=0
+merged_list <- Filter(function(x) any(x != 0), merged_list)
+
+## Function to extract from domains             
+extract_rows <- function(merged_list, domains) {
+  
+  extracted_list <- list()
+  
+  for (name in names(merged_list)) {
+    extracted_rows <- domains[domains$Protein_id %in% merged_list[[name]], ]
+    extracted_list[[name]] <- extracted_rows
+  }
+  
+  return(extracted_list)
+}
+
+extracted_list <- extract_rows(merged_list, domains)
+
+## Excel save
+save_as_excel <- function(extracted_list, file_name) {
+  
+  wb <- createWorkbook()
+  
+  for (name in names(extracted_list)) {
+    addWorksheet(wb, sheetName = name)
+    
+    writeData(wb, sheet = name, extracted_list[[name]])
+  }
+  
+  saveWorkbook(wb, file_name)
+}
+
+excel_file <- "extracted_domains_updated.xlsx"
+
+save_as_excel(extracted_list, excel_file)
