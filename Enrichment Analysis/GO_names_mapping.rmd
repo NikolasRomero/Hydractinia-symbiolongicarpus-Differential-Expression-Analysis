@@ -1,0 +1,28 @@
+## GOID Term name assigment
+
+## Load Packages
+library(dplyr)
+library(GO.db)
+
+## Function to asign each GO ID a GO term including obsolete GO terms
+
+unique_go_ids <- na.omit(unique(annotated_degs$GO_ID))
+
+get_go_term <- function(go_id) {
+    if (go_id %in% keys(GOTERM)) {
+    return(Term(GOTERM[[go_id]]))
+  }
+  if (go_id %in% keys(GOOBSOLETE)) {
+    return(paste("Obsolete:", Term(GOOBSOLETE[[go_id]])))
+  }
+  return(paste("GO term", go_id, "not found in the database"))
+}
+
+## Perform the mapping
+go_annotation <- sapply(unique_go_ids, get_go_term)
+terms_to_id <- data.frame(GO_ID = names(go_annotation), GO_Term = as.character(go_annotation), stringsAsFactors = FALSE)
+
+## 
+ids_GO <- unique(gaf$GO_ID)
+ids_GO_annotation <- sapply(ids_GO, get_go_term)
+terms_to_GO <- data.frame(GO_ID = names(ids_GO_annotation), GO_Term = as.character(ids_GO_annotation), stringsAsFactors = FALSE)
