@@ -1,0 +1,26 @@
+## Interesting fomain containing proteins related to treatment
+
+## Load packages
+
+## IDCP manual selection from previous excle save file sorting
+domains2seq <- c("XP_057291281.1", "XP_057292266.1", "XP_057300575.1", "XP_057298588.1", "XP_057296100.1", "XP_057311154.1", "XP_057299059.1", "XP_057291905.1", "XP_057293495.1", "XP_057316554.1",
+"XP_057295560.1", "XP_057314423.1", "XP_057297495.1", "XP_057298019.1", "XP_057304960.1", "XP_057305108.1", "XP_057316219.1", "XP_057314360.1", "XP_057289309.1", "XP_057291674.1", "XP_057310973.1",
+"XP_057301279.1", "XP_057297495.1", "XP_057314423.1", "XP_057290626.1", "XP_057304056.1", "XP_057292304.1", "XP_057292777.1", "XP_057296629.1", "XP_057313020.1", "XP_057297910.1", "XP_057292180.1",
+"XP_057315032.1", "XP_057308725.1", "XP_057316276.1", "XP_057292266.1", "XP_057304043.1", "XP_057293142.1", "XP_057307972.1", "XP_057301938.1", "XP_057290420.1", "XP_057303575.1", "XP_057296629.1",
+"XP_057289309.1", "XP_057290211.1", "XP_057300798.1")
+
+## Remove repeated id's
+domains2seq <- unique(domains2seq)
+
+## Extract data from DEG's
+ids2seq <- degs[degs$protein_id %in% domains2seq, ]
+
+## Same code of protein extraction and save from 04 section
+pids_in <- ids2seq$protein_id
+sequence_names <- names(protein_sequences)
+extracted_pids <- gsub("^([^ ]+) .*", "\\1", sequence_names)
+matching_indices_in <- match(pids_in, extracted_pids)
+selected_proteins_in <- protein_sequences[matching_indices_in]
+
+Interesting_proteins <- "Interesting_related.fasta"
+writeXStringSet(selected_proteins_in, file = Interesting_proteins)
