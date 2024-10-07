@@ -59,3 +59,37 @@ perform_enrichment_gsea <- function(genes_by_color, term2gene, term2name) {
 }
 
 results_by_module <- perform_enrichment_gsea(genes_by_color, term2gene, term2name)
+
+## Function to summarize EA results
+
+summarize_ea_results <- function(results_by_module) {
+  ea_summary <- data.frame(
+    Module = character(),
+    Num_Terms = integer(),
+    stringsAsFactors = FALSE
+  )
+for (color in names(results_by_module)) {
+    EA_results <- results_by_module[[color]]$EA
+    if (!is.null(EA_results) && nrow(EA_results) > 0) {
+      ea_summary <- rbind(ea_summary, data.frame(Module = color, Num_Terms = nrow(EA_results)))
+    }
+  }
+  
+  return(ea_summary)
+}
+
+## Generate the summary of EA results
+ea_summary <- summarize_ea_results(results_by_module)
+
+## Bar plot of the summary
+bar_modules <- ggplot(ea_summary, aes(x = Module, y = Num_Terms)) +
+  geom_bar(stat = "identity", fill = "Salmon") +
+  labs(title = "Number of Terms in EA Results by Module",
+       x = "Module Color",
+       y = "Number of Terms") +
+  theme_minimal() +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
