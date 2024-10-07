@@ -1,0 +1,97 @@
+
+## Generate data for bar plots
+
+## Functions to count number of hared elements and if they are positive or negative
+counts_leiden <- lapply(filtered_shared_elements_leiden, function(sublist) {
+  lapply(sublist, function(df) {
+    positive_count <- sum(df$LFC > 0)
+    negative_count <- sum(df$LFC < 0)
+    return(c(positive = positive_count, negative = negative_count))
+  })
+})
+
+counts_wilcoxon <- lapply(filtered_shared_elements_wilcoxon, function(sublist) {
+  lapply(sublist, function(df) {
+    positive_count <- sum(df$LFC > 0)
+    negative_count <- sum(df$LFC < 0)
+    return(c(positive = positive_count, negative = negative_count))
+  })
+})
+
+## Transform into data frames
+counts_df_leiden <- do.call(rbind, lapply(seq_along(counts_leiden), function(i) {
+  if (length(counts_leiden[[i]]) > 0) {
+    data.frame(
+      list_name = paste("Cluster", i),
+      positive = unlist(counts_leiden[[i]])[1],
+      negative = unlist(counts_leiden[[i]])[2]
+    )
+  } else {
+    data.frame(
+      list_name = paste("Cluster", i),
+      positive = 0,
+      negative = 0
+    )
+  }
+}))
+
+counts_df_wilcoxon <- do.call(rbind, lapply(seq_along(counts_wilcoxon), function(i) {
+  if (length(counts_wilcoxon[[i]]) > 0) {
+    data.frame(
+      list_name = paste("Cluster", i),
+      positive = unlist(counts_wilcoxon[[i]])[1],
+      negative = unlist(counts_wilcoxon[[i]])[2]
+    )
+  } else {
+    data.frame(
+      list_name = paste("Cluster", i),
+      positive = 0,
+      negative = 0
+    )
+  }
+}))
+
+## Reshape for the bar plots
+counts_melt_leiden <- reshape2::melt(counts_df_leiden, id.vars = "list_name", variable.name = "type", value.name = "count")
+
+counts_melt_wilcoxon <- reshape2::melt(counts_df_wilcoxon, id.vars = "list_name", variable.name = "type", value.name = "count")
+
+## Barplots
+l <- ggplot(counts_melt_leiden, aes(x = list_name, y = count, fill = type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Cell Clusters", y = "Number of Cell Markers", fill = "Expression") +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) +
+  
+scale_fill_manual(values = c("positive" = "red",
+                               "negative" = "blue"))
+l
+
+w <- ggplot(counts_melt_wilcoxon, aes(x = list_name, y = count, fill = type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Cell Clusters", y = "Number of Cell Markers", fill = "Expression") +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) +
+  
+scale_fill_manual(values = c("positive" = "red",
+                             "negative" = "blue"))
+
+## Merge plots
+
+l_lab <- ggdraw() +
+  draw_plot(l) +
+  draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+w_lab <- ggdraw() +
+  draw_plot(w) +
+  draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+combined_plot_cell <- plot_grid(l_lab, w_lab, ncol = 2, rel_widths = c(1, 1))
+
+w
