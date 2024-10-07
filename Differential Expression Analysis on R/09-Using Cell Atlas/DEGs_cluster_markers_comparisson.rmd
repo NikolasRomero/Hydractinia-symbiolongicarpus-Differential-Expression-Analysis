@@ -1,0 +1,52 @@
+## Compare our list of genes with the cell type cluster markers from the cell atlas single cell project
+
+## Define the terms to look inside the lists
+seach_column <- degs$gene_id
+
+## Fuctions to search inside thelists and remove empty vectors
+shared_elements_leiden <- lapply(list_of_leiden, function(sublist) {
+  filtered_sublist <- lapply(sublist, function(vec) {
+    intersect(seach_column, vec)
+  })
+  Filter(function(x) length(x) > 0, filtered_sublist)
+})
+
+shared_elements_wilcoxon <- lapply(list_of_wilcoxon, function(sublist) {
+  filtered_sublist <- lapply(sublist, function(vec) {
+    intersect(seach_column, vec)
+  })
+  Filter(function(x) length(x) > 0, filtered_sublist)
+})
+
+## Functions to add Foldchange from DEG's file
+updated_shared_elements_leiden <- lapply(shared_elements_leiden, function(sublist) {
+  lapply(sublist, function(vec) {
+    matched_idx <- match(vec, degs$gene_id)
+    matched_genes <- vec[!is.na(matched_idx)]
+    matched_values <- degs$log2FoldChange[matched_idx[!is.na(matched_idx)]]
+    data.frame(gene = matched_genes, LFC = matched_values)
+  })
+})
+
+updated_shared_elements_wilcoxon <- lapply(shared_elements_wilcoxon, function(sublist) {
+  lapply(sublist, function(vec) {
+    matched_idx <- match(vec, degs$gene_id)
+    matched_genes <- vec[!is.na(matched_idx)]
+    matched_values <- degs$log2FoldChange[matched_idx[!is.na(matched_idx)]]
+    data.frame(gene = matched_genes, LFC = matched_values)
+  })
+})
+
+## Filter to remove empty lists
+filtered_shared_elements_leiden <- Filter(function(sublist) {
+  length(sublist) > 0 && !all(sapply(sublist, function(df) nrow(df) == 0))
+}, updated_shared_elements_leiden)
+
+filtered_shared_elements_wilcoxon <- Filter(function(sublist) {
+  length(sublist) > 0 && !all(sapply(sublist, function(df) nrow(df) == 0))
+}, updated_shared_elements_wilcoxon)
+
+
+
+
+
