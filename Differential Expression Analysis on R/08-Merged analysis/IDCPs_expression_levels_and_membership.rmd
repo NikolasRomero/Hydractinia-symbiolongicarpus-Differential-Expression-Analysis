@@ -1,0 +1,109 @@
+
+## Heatmap of most interesting IDCPs
+
+## Load Packages
+library(cowplot)
+library(ggplot2)
+library(ggVennDiagram)
+library(pheatmap)
+library(png)
+library(vegan)
+
+## Extract relevant data
+heat_rows <- ids2seq[, c("gene_id", "protein_id")]
+row_lab <- data.frame(Column_Name = ids2seq$protein_id)
+row_labels <- heat_rows$gene_id
+rownames(row_lab) <- row_labels
+
+## Extract rlog normalized data
+select_rows <- match(heat_rows$gene_id, rownames(assay(rld)))
+select_rows <- select_rows[!is.na(select_rows)]
+
+## Heatmap features
+heat_df <- as.data.frame(colData(dds)["condition"])
+
+heatmap_colors <- colorRampPalette(c("blue", "ivory", "red"))(30)
+annotation_colors <- list(condition = c("Control" = "#0099FF", "Treatment" = "#FF0090"))
+annotation_row <- data.frame(protein_id = heat_rows$protein_id)
+
+## plot
+ph <- pheatmap(assay(rld)[select_rows,], cluster_rows = TRUE, show_rownames = TRUE,
+         cluster_cols = TRUE, 
+         annotation_col = heat_df, 
+         labels_row = row_lab$Column_Name, 
+         color = heatmap_colors, 
+         annotation_colors = annotation_colors)
+
+ph
+
+## IDCPs module membership
+
+## Prepare lits
+green2idcp <- ids2seq[ids2seq$gene_id %in% rownames(green), ]
+green2idcp <- green2idcp$gene_id
+
+turquoise2idcp <- ids2seq[ids2seq$gene_id %in% rownames(turquoise), ]
+turquoise2idcp <- turquoise2idcp$gene_id
+
+cyan2idcp <- ids2seq[ids2seq$gene_id %in% rownames(cyan), ]
+cyan2idcp <- cyan2idcp$gene_id
+
+yellow2idcp <- ids2seq[ids2seq$gene_id %in% rownames(yellow), ]
+yellow2idcp <- yellow2idcp$gene_id
+
+## Venn plot
+venn_lists_dom <- list(Green = green2idcp, Turquoise = turquoise2idcp, Cyan = cyan2idcp, Yellow = yellow2idcp)
+venn_dom <- Venn(venn_lists_dom)
+venn_data_dom <- process_data(venn_dom)
+venn_plot_dom <- ggplot() +
+  geom_polygon(aes(X, Y, fill = name, group = id), 
+               data = venn_regionedge(venn_data_dom),
+               show.legend = FALSE) +
+  geom_path(aes(X, Y, color = id, group = id), 
+            data = venn_setedge(venn_data_dom), 
+            linewidth = 1,
+            show.legend = FALSE) +
+  geom_text(aes(X, Y, label = name),
+            size = 7,
+            data = venn_setlabel(venn_data_dom)) +
+  geom_label(aes(X, Y, label = count),
+             size = 7,
+             data = venn_regionlabel(venn_data_dom),
+             alpha = 0) +
+  scale_fill_manual(values = c("Green" = "#00FF00", "Turquoise" = "#40E0D0", "Cyan" = "#00FFFF", "Yellow" = "#FFFF00", "Green/Turquoise" = "#20ef68", "Green/Cyan" = "#00ff7f", "Green/Yellow" = "#7fff00", "Turquoise/Cyan" = "#20efe7", "Turquoise/Yellow" = "#9fef68", "Cyan/Yellow" = "#7fff7f", "Green/Turquoise/Cyan" = "#10f7b3", "Green/Turquoise/Yellow" = "#8ff734", "Green/Cyan/Yellow" = "#7fff3f", "Turquoise/Cyan/Yellow" = "#8ff773", "Green/Turquoise/Cyan/Yellow" = "#5fef68")) + 
+  scale_color_manual(values = c("1"= "black", "2" = "black", "3" = "black", "4" = "black")) +
+  coord_equal() +
+  theme_void() 
+
+venn_plot_dom
+
+## Merge plots
+
+## As heatmaps cannot be saved as objects fot his function save as png image
+png("PH.png", width = 800, height = 800)
+
+pheatmap(assay(rld)[select_rows,], cluster_rows = TRUE, show_rownames = TRUE,
+         cluster_cols = TRUE, 
+         annotation_col = heat_df, 
+         labels_row = row_lab$Column_Name, 
+         color = heatmap_colors, 
+         annotation_colors = annotation_colors)
+
+dev.off()
+
+ph_image <- readPNG("PH.png")
+ph_raster <- rasterGrob(ph_image, width = unit(1, "npc"), height = unit(1, "npc"))
+
+## Add labels
+ph_lab <- ggdraw() +
+  draw_plot(ph_raster) +
+  draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+venn_dom_lab <- ggdraw() +
+  draw_plot(venn_plot_dom) +
+  draw_label("B", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+## Merge
+combined_plot_idcp <- plot_grid(ph_lab, venn_dom_lab, ncol = 2, rel_widths = c(2, 1))
+
+combined_plot_idcp 
