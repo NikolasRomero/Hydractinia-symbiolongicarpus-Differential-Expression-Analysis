@@ -1,0 +1,61 @@
+## ENrichment analysis of each coexpression network module using DESeq2 results
+
+## Load packages
+library(clusterProfiler)
+library(dplyr)
+library(ggplot2)
+
+## DEseq results object as dataframe
+allgenes <- as.data.frame(res)
+
+## Export to galaxy annotation
+ALL = "All.tsv"
+
+write.table(allgenes, file = ALL, sep = "\t", quote = FALSE)
+
+## Reimport from a .tsv file
+allres <- read.delim("~/IEI/Maestria/Tesis/Tesis tras burnout/Tesis/All_annot.tsv", row.names = NULL)
+
+## Change headers
+names(allres)[names(allres) == "row.names"] <- "gene_id"
+names(allres)[names(allres) == "X.baseMean"] <- "baseMean"
+
+## Remove innecesary text
+allres$GeneID <- gsub(del, "", allres$GeneID)
+
+## Function to extract al module genes and classify them into list inside a list
+get_genes_by_color <- function(module_colors, module_gene_mapping, allres) {
+  genes_by_color <- list()
+  for (color in module_colors) {
+    module_genes <- module_gene_mapping %>%
+                    filter(`bwnet$colors` == color)
+    module2res <- rownames(module_genes)
+    genes <- allres[allres$gene_id %in% module2res, ]
+    genes_by_color[[color]] <- genes
+  }
+  return(genes_by_color)
+}
+
+genes_by_color <- get_genes_by_color(cleaned_module_names, module_gene_mapping, allres)
+
+## Function to perform Enrichment analysis
+perform_enrichment_gsea <- function(genes_by_color, term2gene, term2name) {
+  results_list <- list() 
+ for (color in names(genes_by_color)) {
+    module_data <- genes_by_color[[color]]
+    module_logFC <- module_data[, "log2FoldChange"]
+    names(module_logFC) <- as.character(module_data[, "GeneID"])
+    sorted_module <- sort(module_logFC, decreasing = TRUE)
+    EA_results <- enricher(names(module_logFC), TERM2GENE = term2gene, TERM2NAME = term2name)
+    EA_results_df <- as.data.frame(EA_results)
+    GSEA_results <- GSEA(sorted_module, TERM2GENE = term2gene, TERM2NAME = term2name)
+    GSEA_results_df <- as.data.frame(GSEA_results)
+    results_list[[color]] <- list(
+      EA = EA_results_df,
+      GSEA = GSEA_results_df
+    )
+  }
+  return(results_list)
+}
+
+results_by_module <- perform_enrichment_gsea(genes_by_color, term2gene, term2name)
