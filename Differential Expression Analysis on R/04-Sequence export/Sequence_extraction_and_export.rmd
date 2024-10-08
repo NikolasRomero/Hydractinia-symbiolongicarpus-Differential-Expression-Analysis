@@ -28,3 +28,17 @@ selected_proteins <- protein_sequences[matching_indices]
 ## Import the sequences
 Interpro_degs <- "Interpro_degs.fasta"
 writeXStringSet(selected_proteins, file = Interpro_degs)
+
+## Protein sequence export to eggnog GO annotation
+
+allprot <- read.delim("~/IEI/Maestria/Tesis/Tesis tras burnout/Tesis/All_genes_prot.tsv", row.names = NULL)
+names(allprot)[names(allprot) == "row.names"] <- "gene_id"
+names(allprot)[names(allprot) == "X.baseMean"] <- "baseMean"
+allprot <-  na.omit(allprot)
+
+apids <- allprot$protein_id
+indices_to_eggnog <- match(apids, extracted_pids)
+proteins_to_eggnog <- protein_sequences[indices_to_eggnog]
+
+eggnog_genes <- "eggnog_genes.fasta"
+writeXStringSet(proteins_to_eggnog, file = eggnog_genes)
