@@ -22,9 +22,9 @@ correlation_color <- c("#bce3ed", "#3450f7", "#a0d8ec", "#d7eeee", "#fff9ec", "#
                               "#ffc5ce", "#ffd4d6", "#ffccd2", "#ffd2d6", "#ffdddc", "#ffe5e0", "#fff7eb", "#69a1ef",
                               "#5b8cf1", "#0000ff", "#c3e6ed")
 
-module_name <- c("greenyellow", "blue", "brown", "purple", "darkturquoise", "black", "magenta", "lightyellow", "darkgreen",
-                 "orange", "lightgreen", "yellow", "tan", "turquoise", "green", "cyan","darkred", "grey60", "midnightblue",
-                 "darkgrey", "lightcyan", "royalblue", "salmon", "red", "darkorange", "pink", "grey")
+module_name <- c("grey", "pink", "darkorange", "red", "salmon", "royalblue", "lightcyan", "darkgrey", "midnightblue",
+                 "grey60", "darkred", "cyan", "green", "turquoise", "tan","yellow", "lightgreen", "orange", "darkgreen",
+                 "lightyellow", "magenta", "black", "darkturquoise", "purple", "brown", "blue", "greenyellow")}
 
 module_correlation_colors <- data.frame(module_name = module_name, correlation_color = correlation_color, stringsAsFactors = FALSE)
 
