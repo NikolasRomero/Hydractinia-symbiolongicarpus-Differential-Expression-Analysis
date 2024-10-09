@@ -54,3 +54,14 @@ NetA <- ggplot(network_annotations_melt, aes(x = sublist, y = count, fill = anno
         axis.text.y = element_text(size = 10)) +
   scale_fill_manual(values = c("annotated" = "#F8766D", "unannotated" = "#00BFC4")) +
   coord_flip() 
+
+## Merge with previous data
+bar_modules <- ggdraw() +
+  draw_plot(bar_modules_l) +
+  draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+NetA <- ggdraw() +
+  draw_plot(NetA_l) +
+  draw_label("B", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+combined_plot_EAnet <- plot_grid(bar_modules_l, NetA_l, ncol = 2, rel_widths = c(1, 1))
