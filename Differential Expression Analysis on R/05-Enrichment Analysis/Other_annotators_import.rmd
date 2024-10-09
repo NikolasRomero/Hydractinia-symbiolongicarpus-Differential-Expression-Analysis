@@ -1,0 +1,76 @@
+##  GO anotations frm different GO avaiable annotation method
+
+## Load packaghes
+library(dplyr)
+
+## Load eggNOG-mapper and PANNZER2 results from tsv files
+emapper_annotations <- read.delim("~/IEI/Maestria/Tesis/Tesis tras burnout/Tesis/emapper.annotations.tsv", header = TRUE, comment.char = "!", stringsAsFactors = FALSE)
+names(emapper_annotations)[names(emapper_annotations) == "X.query"] <- "protein_id"
+names(emapper_annotations)[names(emapper_annotations) == "GOs"] <- "GO_ID"
+emapper_annotations$GOs <- gsub(",", "/", emapper_annotations$GO_ID)
+emapper_annotations <- emapper_annotations %>% filter(GO_ID != "-")
+
+pannzer_annotations <- read.delim("~/IEI/Maestria/Tesis/Tesis tras burnout/Tesis/PANNZER2GO.tsv", header = TRUE, stringsAsFactors = FALSE, colClasses = c("goid" = "character"))
+names(pannzer_annotations)[names(pannzer_annotations) == "X.qpid"] <- "protein_id"
+names(pannzer_annotations)[names(pannzer_annotations) == "goid"] <- "GO_ID"
+pannzer_annotations$GO_ID <- paste0("GO:", pannzer_annotations$GO_ID)
+
+## Modify columns to compare
+gaf2net$GeneID <- as.character(gaf2net$GeneID)
+
+## Annotation comprarisons
+emapper_genes <- allprot[allprot$protein_id %in% emapper_annotations$protein_id, ]
+emapper_novel <- anti_join(emapper_genes, gaf2net, by = "GeneID")
+emapper_ids <- emapper_genes[, c("GeneID", "protein_id")]
+emapper_GOs <- emapper_annotations[, c("protein_id", "GO_ID")]
+emapper2net <- inner_join(emapper_genes, emapper_GOs, by = "protein_id") %>% select(GeneID, GO_ID)
+
+pannzer_genes <- allprot[allprot$protein_id %in% pannzer_annotations$protein_id, ]
+pannzer_novel <- anti_join(pannzer_genes, gaf2net, by = "GeneID")
+pannzer2genes <- inner_join(allprot, pannzer_annotations, by = "protein_id")
+pannzer2net  <- pannzer2genes %>%
+  group_by(GeneID) %>%
+  summarize(GO_ID = paste(GO_ID, collapse = "/"))
+
+
+gaf2all <- anti_join(gaf2net, allprot, by = "GeneID")
+
+novel_pannzer_emapper <- anti_join(pannzer_novel, emapper_novel, by = "GeneID")
+novel_emapper_pannzer <- anti_join(emapper_novel, pannzer_novel, by = "GeneID")
+
+## All annotations data frame
+all_annotations <- full_join(gaf2all, emapper2net, by = "GeneID") %>%
+  full_join(., pannzer2net, by = "GeneID")
+colnames(all_annotations) <- c("GeneID", "gaf_GO_ID", "emapper_GO_ID", "pannzer_GO_ID")
+all_annotations[is.na(all_annotations)] <- "-"
+
+## Venn plot data preparation
+gaf_GO <- gaf2all$GeneID
+gaf_emapper <- emapper2net$GeneID
+gaf_panzzer <- pannzer2net$GeneID
+
+## Venn plot
+venn_GO_lists <- list(GA = gaf_GO, EA = gaf_emapper, PA = gaf_panzzer)
+venn_GO <- Venn(venn_net_lists)
+venn_GO_data <- process_data(venn_net)
+venn_plot_GO <- ggplot() +
+  geom_polygon(aes(X, Y, fill = name, group = id), 
+               data = venn_regionedge(venn_net_data),
+               show.legend = FALSE) +
+  geom_path(aes(X, Y, color = id, group = id), 
+            data = venn_setedge(venn_net_data), 
+            linewidth = 1,
+            show.legend = FALSE) +
+  geom_text(aes(X, Y, label = name),
+            size = 5,
+            data = venn_setlabel(venn_net_data)) +
+  geom_label(aes(X, Y, label = count),
+             size = 5,
+             data = venn_regionlabel(venn_net_data),
+             alpha = 0) +
+    scale_fill_manual(values = c("GA" = "#9FA8DA", "EA" = "#FF9E80", "PA" = "#90EE90", "GA/EA" = "#cfa3ad", "GA/PA" = "#97cbb5", "EA/PA" = "#c7c688", "GA/PA/EA" = "#b3b7b1")) + 
+  scale_color_manual(values = c("1"= "black", "2" = "black", "3" = "black")) +
+  coord_equal() +
+  theme_void() 
+
+venn_plot_GO
