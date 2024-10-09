@@ -1,0 +1,103 @@
+## Divergence plot of expresion levens of present cell markers in DEG's assigned to each cell type known of Hydractinia
+
+## Load packages
+library(ggplo2)
+library(reshape2)
+
+## Define color palette
+cell_type_colors <- c(
+  "i-cells, early and mixed progenitors" = "#ff6666",    
+  "sperm and spermatogenesis" = "#66cccc",              
+  "neurones" = "#3366cc",                               
+  "nematoblasts and nematocytes" = "#9370DB",           
+  "Conodipine + cells" = "#ff99cc",                     
+  "digestive gland cells" = "#99cc66",                  
+  "mucosal gland cells" = "#99ccff",                    
+  "epithelial" = "#ffcc99",                             
+  "epitheliomuscular" = "#cc0000",                      
+  "Shematrin-like+ cells" = "#ff9900",                  
+  "unannotated" = "#999999"                             
+)
+
+## Transform data ffrom lists to data frames
+plot_data_leiden <- do.call(rbind, lapply(names(classified_cell_types_leiden), function(cell_type) {
+  clusters <- classified_cell_types_leiden[[cell_type]]
+  do.call(rbind, lapply(names(clusters), function(cluster) {
+    df <- clusters[[cluster]]
+    positive_genes <- sum(df$LFC > 0)
+    negative_genes <- sum(df$LFC < 0)
+    data.frame(
+      cell_type = cell_type,
+      cluster = cluster,
+      positive = positive_genes,
+      negative = -negative_genes, 
+      color = cell_type_colors[cell_type] 
+    )
+  }))
+}))
+
+plot_data_wilcoxon <- do.call(rbind, lapply(names(classified_cell_types_wilcoxon), function(cell_type) {
+  clusters <- classified_cell_types_wilcoxon[[cell_type]]
+  do.call(rbind, lapply(names(clusters), function(cluster) {
+    df <- clusters[[cluster]]
+    positive_genes <- sum(df$LFC > 0)
+    negative_genes <- sum(df$LFC < 0)
+    data.frame(
+      cell_type = cell_type,
+      cluster = cluster,
+      positive = positive_genes,
+      negative = -negative_genes, 
+      color = cell_type_colors[cell_type] 
+    )
+  }))
+}))
+
+## Reshape the data to plot
+
+plot_data_leiden_melt <- melt(plot_data_leiden, id.vars = c("cell_type", "cluster", "color"),
+                                variable.name = "type", value.name = "gene_count")
+
+plot_data_wilcoxon_melt <- melt(plot_data_wilcoxon, id.vars = c("cell_type", "cluster", "color"),
+                                variable.name = "type", value.name = "gene_count")
+
+## Plot the divergence plots
+
+ldp <- ggplot(plot_data_leiden_melt, aes(x = gene_count, y = reorder(cluster, gene_count), fill = cell_type)) +
+  geom_bar(stat = "identity", position = "identity") +
+  geom_vline(xintercept = 0, color = "black", size = 1) +  
+  facet_grid(cell_type ~ ., scales = "free_y", space = "free") +
+  scale_fill_manual(values = cell_type_colors, name = "Cell Type") +
+  labs(x = "Number of Genes", y = "Clusters", title = "Diverging Bar Plot by Cell Type and Cluster (Leiden)") +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+    legend.position = "right",
+    legend.key.size = unit(0.4, "cm"),  
+    legend.text = element_text(size = 8),  
+    strip.text.y = element_blank()  
+  ) +
+  scale_y_discrete(labels = plot_data_leiden$cluster)
+
+wdp <- ggplot(plot_data_wilcoxon_melt, aes(x = gene_count, y = reorder(cluster, gene_count), fill = cell_type)) +
+  geom_bar(stat = "identity", position = "identity") +
+  geom_vline(xintercept = 0, color = "black", size = 1) +  
+  facet_grid(cell_type ~ ., scales = "free_y", space = "free") +
+  scale_fill_manual(values = cell_type_colors, name = "Cell Type") +
+  labs(x = "Number of Genes", y = "Clusters", title = "Diverging Bar Plot by Cell Type and Cluster (leiden-Wilcoxon)") +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+    legend.position = "right",
+    legend.key.size = unit(0.4, "cm"),  
+    legend.text = element_text(size = 8),  
+    strip.text.y = element_blank()  
+  ) +
+  scale_y_discrete(labels = plot_data_wilcoxon$cluster)
