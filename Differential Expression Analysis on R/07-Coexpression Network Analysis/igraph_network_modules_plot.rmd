@@ -16,20 +16,22 @@ g <- graph.adjacency(adjacency_matrix, mode = "undirected", diag = FALSE)
 module_names <- colnames(module_eigengenes)
 cleaned_module_names <- gsub(pattern = "ME", replacement = "", x = module_names)
 
+## Extract the colors from the corlevelplot
+correlation_color <- c("#bce3ed", "#3450f7", "#a0d8ec", "#d7eeee", "#fff9ec", "#8fd1eb", "#88ceeb", "#92d2eb",
+                              "#ff9aa3", "#ffd4d6", "#ffc0cb", "#ff5f64", "#ff4b4f", "#ff5357", "#fffbed", "#ff6268",
+                              "#ffc5ce", "#ffd4d6", "#ffccd2", "#ffd2d6", "#ffdddc", "#ffe5e0", "#fff7eb", "#69a1ef",
+                              "#5b8cf1", "#0000ff", "#c3e6ed")
+
+module_name <- c("greenyellow", "blue", "brown", "purple", "darkturquoise", "black", "magenta", "lightyellow", "darkgreen",
+                 "orange", "lightgreen", "yellow", "tan", "turquoise", "green", "cyan","darkred", "grey60", "midnightblue",
+                 "darkgrey", "lightcyan", "royalblue", "salmon", "red", "darkorange", "pink", "grey")
+
+module_correlation_colors <- data.frame(module_name = module_name, correlation_color = correlation_color, stringsAsFactors = FALSE)
+
 ## Assing the cleaned mocule names to the network vertices
 V(g)$name <- cleaned_module_names
+V(g)$color <- module_correlation_colors$correlation_color[match(cleaned_module_names, module_correlation_colors$module_name)]
 V(g)$label.color <- "black"
-
-## Extract the values from correlation and significance plot
-treatment_values <- heatmap_data$Treatment
-
-## Extract colors from CorLevelPlot
-treatment_values_normalized <- (treatment_values - min(treatment_values)) / (max(treatment_values) - min(treatment_values))
-colors <- colorRampPalette(c("blue", "skyblue", "ivory", "pink", "red"))(100)
-treatment_colors <- colors[as.numeric(cut(treatment_values_normalized, breaks = 100))]
-module_names <- rownames(heatmap_data)
-node_indices <- match(V(g)$name, module_names)
-V(g)$color <- treatment_colors[node_indices]
 
 ## Plot the network
 layout <- layout_with_kk(g)
