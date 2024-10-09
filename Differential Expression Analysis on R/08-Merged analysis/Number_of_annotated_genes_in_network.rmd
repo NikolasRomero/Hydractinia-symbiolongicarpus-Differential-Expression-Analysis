@@ -1,0 +1,56 @@
+## identify how manygenes have GO annotation module by module
+
+## Load packages
+library(ggplot2)
+library(reshape2)
+
+## Make a reference dataframe from .gaf
+gaf2genes <- gaf[, c("GeneID", "GO_ID")]
+
+gaf2net <- df %>%
+  group_by(GeneID) %>%
+  summarize(collapsed_values = paste(GO_ID, collapse = "/"))
+
+## Empty dataframe to store the plotting data
+network_annotations <- data.frame(sublist = character(),
+                                  annotated = numeric(),
+                                  unannotated = numeric(),
+                                  stringsAsFactors = FALSE)
+
+## function to determine annotations
+for (i in seq_along(genes_by_color)) {
+    sublist_name <- names(genes_by_color)[i] 
+    df <- genes_by_color[[i]]
+    if ("GeneID" %in% colnames(df)) {
+        annotated_genes <- df$GeneID %in% gaf2net$GeneID
+        unannotated_genes <- !annotated_genes
+        annotated_count <- sum(annotated_genes)
+        unannotated_count <- sum(unannotated_genes)
+        network_annotations <- rbind(network_annotations, data.frame(
+            sublist = sublist_name,
+            annotated = annotated_count,
+            unannotated = unannotated_count
+        ))
+    } else {
+        warning(paste("The data frame for", sublist_name, "does not contain a 'gene_id' column."))
+    }
+}
+network_annotations$sublist <- factor(network_annotations$sublist, levels = unique(network_annotations$sublist))
+}
+
+## Melt the data fro ggplo2
+network_annotations_melt <- melt(network_annotations, id.vars = "sublist", variable.name = "annotation_status", value.name = "count")
+
+## Bar ploting
+NetA <- ggplot(network_annotations_melt, aes(x = sublist, y = count, fill = annotation_status)) +
+  geom_bar(stat = "identity", position = "stack") + 
+  labs(title = "Annotated vs Unannotated Genes per Module",
+       x = "Modules", y = "Number of Genes", fill = "Annotation Status") +
+  theme_minimal() +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.text.y = element_text(size = 10)) +
+  scale_fill_manual(values = c("annotated" = "#F8766D", "unannotated" = "#00BFC4")) +
+  coord_flip() 
