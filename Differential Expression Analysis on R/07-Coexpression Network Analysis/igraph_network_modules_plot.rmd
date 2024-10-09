@@ -26,6 +26,7 @@ treatment_values <- heatmap_data$Treatment
 ## Extract colors from CorLevelPlot
 treatment_values_normalized <- (treatment_values - min(treatment_values)) / (max(treatment_values) - min(treatment_values))
 colors <- colorRampPalette(c("blue", "skyblue", "ivory", "pink", "red"))(100)
+treatment_colors <- colors[as.numeric(cut(treatment_values_normalized, breaks = 100))]
 module_names <- rownames(heatmap_data)
 node_indices <- match(V(g)$name, module_names)
 V(g)$color <- treatment_colors[node_indices]
