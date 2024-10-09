@@ -93,3 +93,15 @@ venn_plot_rela <- ggplot() +
   theme_void() 
 
 venn_plot_rela
+
+## Merge venn plots
+
+venn_plot_pos <- ggdraw() +
+  draw_plot(venn_plot_net) +
+  draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+venn_plot_neg <- ggdraw() +
+  draw_plot(venn_plot_net_neg) +
+  draw_label("B", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+combined_plot_venn <- plot_grid(venn_plot_pos, venn_plot_neg, ncol = 2, rel_widths = c(2, 2))
