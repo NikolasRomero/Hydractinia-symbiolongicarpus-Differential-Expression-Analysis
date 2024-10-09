@@ -1,0 +1,56 @@
+## Asing cell type name to cell type clusters to find differetially regulated cell terms
+
+## Create cell types data frame
+clusters <- c(4, 8, 14, 6, 34, 16, 26, 27, 29, 33, 10, 12, 15, 18, 25, 9, 13, 36, 17, 22, 24, 21, 32, 0, 1, 7, 19, 23, 28, 30, 35, 37, 2, 3, 5, 20, 31, 11, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52)
+cell_type <- c(rep("i-cells, early and mixed progenitors", 3),
+               rep("sperm and spermatogenesis", 2),
+               rep("neurones", 5),
+               rep("nematoblasts and nematocytes", 5),
+               rep("Conodipine + cells", 3),
+               rep("digestive gland cells", 3),
+               rep("mucosal gland cells", 2),
+               rep("epithelial", 9),
+               rep("epitheliomuscular", 5),
+               rep("Shematrin-like+ cells", 1),
+               rep("unannotated", 16))
+
+cluster2cells <- data.frame(cell_type = cell_type, cell_cluster = clusters)
+cluster2cells$cell_cluster <- paste0("Cluster ", cluster2cells$cell_cluster)
+
+## AClassify the data into the cell types
+classified_cell_types_leiden <- lapply(unique(cluster2cells$cell_type), function(cell_type) {
+   matching_clusters <- cluster2cells$cell_cluster[cluster2cells$cell_type == cell_type]
+    clusters_data <- lapply(matching_clusters, function(cluster) {
+      if (cluster %in% names(filtered_shared_elements_leiden)) {
+        do.call(rbind, filtered_shared_elements_leiden[[cluster]])
+      } else {
+        NULL
+      }
+    })
+    non_null_clusters <- matching_clusters[!sapply(clusters_data, is.null)]
+    clusters_data <- Filter(Negate(is.null), clusters_data)
+    setNames(clusters_data, non_null_clusters)
+  })
+  names(classified_cell_types_leiden) <- unique(cluster2cells$cell_type)
+  classified_cell_types_leiden <- Filter(function(x) length(x) > 0, classified_cell_types_leiden)
+
+classified_cell_types_wilcoxon <- lapply(unique(cluster2cells$cell_type), function(cell_type) {
+  matching_clusters <- cluster2cells$cell_cluster[cluster2cells$cell_type == cell_type]
+  clusters_data <- lapply(matching_clusters, function(cluster) {
+    if (cluster %in% names(filtered_shared_elements_wilcoxon)) {
+      do.call(rbind, filtered_shared_elements_wilcoxon[[cluster]])
+    } else {
+      NULL
+    }
+  })
+  non_null_clusters <- matching_clusters[!sapply(clusters_data, is.null)]
+  clusters_data <- Filter(Negate(is.null), clusters_data)
+  setNames(clusters_data, non_null_clusters)
+})
+names(classified_cell_types_wilcoxon) <- unique(cluster2cells$cell_type)
+classified_cell_types_wilcoxon <- Filter(function(x) length(x) > 0, classified_cell_types_wilcoxon)
+
+
+
+
+
