@@ -9,17 +9,28 @@ cor_threshold <- 0.5
 adjacency_matrix <- (abs(module_correlations) > cor_threshold) * 1
 diag(adjacency_matrix) <- 0
 
-## Plot
+## Create the igraph object
 g <- graph.adjacency(adjacency_matrix, mode = "undirected", diag = FALSE)
 
+## Clean thenames of the modules
 module_names <- colnames(module_eigengenes)
 cleaned_module_names <- gsub(pattern = "ME", replacement = "", x = module_names)
 
-
+## Assing the cleaned mocule names to the network vertices
 V(g)$name <- cleaned_module_names
-V(g)$color <- cleaned_module_names
 V(g)$label.color <- "black"
 
+## Extract the values from correlation and significance plot
+treatment_values <- heatmap_data$Treatment
+
+## Extract colors from CorLevelPlot
+treatment_values_normalized <- (treatment_values - min(treatment_values)) / (max(treatment_values) - min(treatment_values))
+colors <- colorRampPalette(c("blue", "skyblue", "ivory", "pink", "red"))(100)
+module_names <- rownames(heatmap_data)
+node_indices <- match(V(g)$name, module_names)
+V(g)$color <- treatment_colors[node_indices]
+
+## Plot the network
 layout <- layout_with_kk(g)
 
 plot(g, layout = layout,
