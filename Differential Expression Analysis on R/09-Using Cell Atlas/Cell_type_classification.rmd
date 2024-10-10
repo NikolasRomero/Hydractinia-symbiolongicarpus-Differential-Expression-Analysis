@@ -1,7 +1,13 @@
 ## Asing cell type name to cell type clusters to find differetially regulated cell terms
 
+## Import cell subtypes file
+cell2subtypes <- read.delim("~/IEI/Maestria/Tesis/Tesis tras burnout/Tesis/clusters2subtypes.tsv", row.names = NULL, header = TRUE, stringsAsFactors = FALSE,)
+names(cell2subtypes)[names(cell2subtypes) == "X.cell_cluster"] <- "cell_cluster"
+cluster2subtypes <- cell2subtypes[, c("cell_cluster", "cell_subtype")]
+cluster2subtypes$cell_cluster<- paste0("Cluster ", cluster2subtypes$cell_cluster)
+
 ## Create cell types data frame
-clusters <- c(4, 8, 14, 6, 34, 16, 26, 27, 29, 33, 10, 12, 15, 18, 25, 9, 13, 36, 17, 22, 24, 21, 32, 0, 1, 7, 19, 23, 28, 30, 35, 37, 2, 3, 5, 20, 31, 11, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52)
+clusters <- c(04, 08, 14, 06, 34, 16, 26, 27, 29, 33, 10, 12, 15, 18, 25, 09, 13, 36, 17, 22, 24, 21, 32, 00, 01, 07, 19, 23, 28, 30, 35, 37, 02, 03, 05, 20, 31, 11, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52)
 cell_type <- c(rep("i-cells, early and mixed progenitors", 3),
                rep("sperm and spermatogenesis", 2),
                rep("neurones", 5),
@@ -12,43 +18,48 @@ cell_type <- c(rep("i-cells, early and mixed progenitors", 3),
                rep("epithelial", 9),
                rep("epitheliomuscular", 5),
                rep("Shematrin-like+ cells", 1),
-               rep("unannotated", 16))
+               rep("unannotated", 15))
 
 cluster2cells <- data.frame(cell_type = cell_type, cell_cluster = clusters)
 cluster2cells$cell_cluster <- paste0("Cluster ", cluster2cells$cell_cluster)
 
-## AClassify the data into the cell types
-classified_cell_types_leiden <- lapply(unique(cluster2cells$cell_type), function(cell_type) {
-   matching_clusters <- cluster2cells$cell_cluster[cluster2cells$cell_type == cell_type]
-    clusters_data <- lapply(matching_clusters, function(cluster) {
-      if (cluster %in% names(filtered_shared_elements_leiden)) {
-        do.call(rbind, filtered_shared_elements_leiden[[cluster]])
-      } else {
-        NULL
-      }
-    })
-    non_null_clusters <- matching_clusters[!sapply(clusters_data, is.null)]
-    clusters_data <- Filter(Negate(is.null), clusters_data)
-    setNames(clusters_data, non_null_clusters)
-  })
-  names(classified_cell_types_leiden) <- unique(cluster2cells$cell_type)
-  classified_cell_types_leiden <- Filter(function(x) length(x) > 0, classified_cell_types_leiden)
+## Merge
+cell_classification <- merge(cluster2cells, cluster2subtypes, by = "cell_cluster")
 
-classified_cell_types_wilcoxon <- lapply(unique(cluster2cells$cell_type), function(cell_type) {
-  matching_clusters <- cluster2cells$cell_cluster[cluster2cells$cell_type == cell_type]
-  clusters_data <- lapply(matching_clusters, function(cluster) {
-    if (cluster %in% names(filtered_shared_elements_wilcoxon)) {
-      do.call(rbind, filtered_shared_elements_wilcoxon[[cluster]])
-    } else {
-      NULL
+## AClassify the data into the cell types
+classified_cell_types_leiden <- list()
+for (cluster_name in names(filtered_shared_elements_leiden)) {
+  classification <- cell_classification[cell_classification$cell_cluster == cluster_name, ]
+  if (nrow(classification) > 0) {
+    cell_type <- classification$cell_type
+    cell_subtype <- classification$cell_subtype
+    cell_cluster <- classification$cell_cluster
+    if (!cell_type %in% names(classified_cell_types_leiden)) {
+      classified_cell_types_leiden[[cell_type]] <- list() 
     }
-  })
-  non_null_clusters <- matching_clusters[!sapply(clusters_data, is.null)]
-  clusters_data <- Filter(Negate(is.null), clusters_data)
-  setNames(clusters_data, non_null_clusters)
-})
-names(classified_cell_types_wilcoxon) <- unique(cluster2cells$cell_type)
-classified_cell_types_wilcoxon <- Filter(function(x) length(x) > 0, classified_cell_types_wilcoxon)
+    if (!cell_subtype %in% names(classified_cell_types_leiden[[cell_type]])) {
+      classified_cell_types_leiden[[cell_type]][[cell_subtype]] <- list() 
+    }
+    classified_cell_types_leiden[[cell_type]][[cell_subtype]][[cell_cluster]] <- filtered_shared_elements_leiden[[cluster_name]][[1]]
+  }
+}
+
+classified_cell_types_wilcoxon <- list()
+for (cluster_name in names(filtered_shared_elements_wilcoxon)) {
+  classification <- cell_classification[cell_classification$cell_cluster == cluster_name, ]
+  if (nrow(classification) > 0) {
+    cell_type <- classification$cell_type
+    cell_subtype <- classification$cell_subtype
+    cell_cluster <- classification$cell_cluster
+    if (!cell_type %in% names(classified_cell_types_wilcoxon)) {
+      classified_cell_types_wilcoxon[[cell_type]] <- list() 
+    }
+    if (!cell_subtype %in% names(classified_cell_types_wilcoxon[[cell_type]])) {
+      classified_cell_types_wilcoxon[[cell_type]][[cell_subtype]] <- list() 
+    }
+    classified_cell_types_wilcoxon[[cell_type]][[cell_subtype]][[cell_cluster]] <- filtered_shared_elements_wilcoxon[[cluster_name]][[1]]
+  }
+}
 
 
 
