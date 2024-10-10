@@ -15,6 +15,18 @@ names(pannzer_annotations)[names(pannzer_annotations) == "X.qpid"] <- "protein_i
 names(pannzer_annotations)[names(pannzer_annotations) == "goid"] <- "GO_ID"
 pannzer_annotations$GO_ID <- paste0("GO:", pannzer_annotations$GO_ID)
 
+interpro_annotations <- read.delim("~/IEI/Maestria/Tesis/Tesis tras burnout/Tesis/eggnog_genes.tsv", row.names = NULL, header = TRUE)
+names(interpro_annotations)[names(interpro_annotations) == "X.protein_id"] <- "protein_id"
+names(interpro_annotations)[names(interpro_annotations) == "Interpro_GO_IDs"] <- "GO_ID"
+interpro_annotations  <- interpro_annotations %>% filter(GO_ID != "-")
+interpro_annotations$GO_ID <- gsub("\\(.*?\\)", "", interpro_annotations$GO_ID)
+interpro_annotations$GO_ID <- gsub("\\|", "/", interpro_annotations$GO_ID)
+interpro_annotations <- interpro_annotations[, c("protein_id", "GO_ID")]
+interpro_annotations <-interpro_annotations %>% 
+  separate_rows(GO_ID, sep = "/")
+interpro_annotations <-interpro_annotations %>% 
+distinct(protein_id, GO_ID)
+
 ## Modify columns to compare
 gaf2net$GeneID <- as.character(gaf2net$GeneID)
 
@@ -32,22 +44,37 @@ pannzer2net  <- pannzer2genes %>%
   group_by(GeneID) %>%
   summarize(GO_ID = paste(GO_ID, collapse = "/"))
 
+interpro_genes <- allprot[allprot$protein_id %in% InterproGO$protein_id, ]
+interpro_novel <- anti_join(interpro_genes, gaf2net, by = "GeneID")
+interpro_GOs <- interpro_annotations[, c("protein_id", "GO_ID")]
+interpro2genes <- inner_join(interpro_genes, interpro_GOs, by = "protein_id") %>% select(GeneID, GO_ID)
+interpro2net  <- interpro2genes %>%
+  group_by(GeneID) %>%
+  summarize(GO_ID = paste(GO_ID, collapse = "/"))
 
+## Extract relevant annotated ids from gaf
 gaf2all <- anti_join(gaf2net, allprot, by = "GeneID")
 
-novel_pannzer_emapper <- anti_join(pannzer_novel, emapper_novel, by = "GeneID")
+## View the novelannotations between annotation methods
 novel_emapper_pannzer <- anti_join(emapper_novel, pannzer_novel, by = "GeneID")
+novel_emapper_interpro <- anti_join(emapper_novel, interpro_novel, by = "GeneID")
+novel_pannzer_emapper <- anti_join(pannzer_novel, emapper_novel, by = "GeneID")
+novel_pannzer_interpro <- anti_join(pannzer_novel, interpro_novel, by = "GeneID")
+novel_interpro_emapper <- anti_join(interpro_novel, emapper_novel, by = "GeneID")
+novel_interpro_pannzer <- anti_join(interpro_novel, pannzer_novel, by = "GeneID")
 
 ## All annotations data frame
 all_annotations <- full_join(gaf2all, emapper2net, by = "GeneID") %>%
-  full_join(., pannzer2net, by = "GeneID")
-colnames(all_annotations) <- c("GeneID", "gaf_GO_ID", "emapper_GO_ID", "pannzer_GO_ID")
+  full_join(., pannzer2net, by = "GeneID") %>%
+  full_join(., interpro2net, by = "GeneID")
+colnames(all_annotations) <- c("GeneID", "gaf_GO_ID", "emapper_GO_ID", "pannzer_GO_ID", "interpro_GO_ID")
 all_annotations[is.na(all_annotations)] <- "-"
 
 ## Venn plot data preparation
 gaf_GO <- gaf2all$GeneID
 gaf_emapper <- emapper2net$GeneID
 gaf_panzzer <- pannzer2net$GeneID
+gaf_interpro <- interpro2net$GeneID
 
 ## Venn plot
 venn_GO_lists <- list(GA = gaf_GO, EA = gaf_emapper, PA = gaf_panzzer)
