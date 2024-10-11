@@ -1,0 +1,47 @@
+## Identify how manyy cell markers are present in each of the coexpression network modules
+
+## Data frame to asign module colors
+modules_colors <- data.frame(module_name = module_name, module_color = module_name)
+
+## Extract cell markers gene_id's from wilcoxond and logaritmic regresión leiden algoritm lists
+leiden2net <- lapply(list_of_leiden, function(x) x$names)
+names(leiden2net) <- names(list_of_leiden)
+
+wilcoxon2net <- lapply(list_of_wilcoxon, function(x) x$names)
+names(wilcoxon2net ) <- names(list_of_wilcoxon)
+
+## Extract module genes gene_id's from module by module membership list
+modules2atlas <- lapply(genes_by_color, function(x) x$gene_id)
+names(modules2atlas) <- names(genes_by_color)
+
+## Prepare empty matrix
+modules_leiden_matrix <- matrix(0, nrow = length(modules2atlas), ncol = length(leiden2net))
+rownames(modules_leiden_matrix) <- names(modules2atlas)
+colnames(modules_leiden_matrix) <- names(leiden2net)
+
+modules_wilcoxon_matrix <- matrix(0, nrow = length(modules2atlas), ncol = length(wilcoxon2net))
+rownames(modules_wilcoxon_matrix) <- names(modules2atlas)
+colnames(modules_wilcoxon_matrix) <- names(wilcoxon2net)
+
+## Matrixe fill function
+for (i in seq_along(modules2atlas)) {
+  for (j in seq_along(leiden2net)) {
+    shared_elements <- intersect(modules2atlas[[i]], leiden2net[[j]])
+    modules_leiden_matrix[i, j] <- length(shared_elements)
+  }
+}
+
+for (i in seq_along(modules2atlas)) {
+  for (j in seq_along(wilcoxon2net)) {
+    shared_elements <- intersect(modules2atlas[[i]], wilcoxon2net[[j]])
+    modules_wilcoxon_matrix[i, j] <- length(shared_elements)
+  }
+}
+
+## Matrix transposition
+modules_leiden_matrix <- t(modules_leiden_matrix)
+
+modules_wilcoxon_matrix <- t(modules_wilcoxon_matrix)
+
+
+  
