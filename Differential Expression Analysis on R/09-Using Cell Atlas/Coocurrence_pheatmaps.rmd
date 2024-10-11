@@ -1,0 +1,57 @@
+## Pheatmaps of coocurrence matrix for WGCNA modules and cell atlas clusters
+
+## Load packages
+library(pheatmap)
+library(RColorBrewer)
+
+## Create custom color palette
+atl2net_palette <- colorRampPalette(c("white", "#FFFFE0", "#FFA07A", "#FA8072", "#FF6347", "red"))(100)
+
+##  Define grouping datafra,es
+cell_types <- c("i-cells, early and mixed progenitors", "sperm and spermatogenesis", "neurones", "nematoblasts and nematocytes", "Conodipine + cells", "digestive gland cells", "mucosal gland cells",
+"epithelial", "epitheliomuscular", "Shematrin-like+ cells", "unannotated")  
+cell_types_colors <- c("#ff6666", "#66cccc", "#3366cc", "#660099", "#ff99cc", "#99cc66", "#99ccff", "#ffcc99", "#cc0000", "#ff9900",  "#999999")
+colors2cells <- data.frame(cell_type = cell_types, cell_type_color = cell_types_colors)
+cluster_colors <- merge(cluster2subtypes, cell_subtype_colors, by = "cell_subtype")
+clusters_colors <- merge(cluster_colors, type2subtype, by = "cell_subtype")
+clusters_colors <- merge(clusters_colors, colors2cells, by = "cell_type")
+names(clusters_colors)[names(clusters_colors) == "color"] <- "cell_subtype_color"
+
+modules_colors <- data.frame(module_name = module_name, module_color = module_name)
+module_relationship <- c(rep("related", 4),
+                  rep("non related", 3),
+                  rep("non significant", 20))
+relationship_colors <- c(rep("red", 4),
+                  rep("blue", 3),
+                  rep("ivory", 20))
+modules_names <- c("green", "turquoise", "cyan", "yellow", "blue", "pink", "brown", "lightyellow", "lightcyan", "tan", "lightgreen", "orange", "salmon", "darkorange", "red", "darkred", "royalblue",
+"darkturquoise", "darkgreen", "purple", "magenta", "greenyellow", "grey60", "darkgrey", "grey", "midnightblue", "black")
+modules_relationship_colors <- data.frame(module_relationship = module_relationship, module_name = modules_names)
+relationship_color <-  data.frame(module_name = modules_names, relationship_colors = relationship_colors)
+module2colors <- merge(modules_relationship_colors, modules_colors, by = "module_name")
+module2colors <- merge(module2colors, relationship_color, by = "module_name")
+
+## Custom color scales for labels
+annotation_col_leiden <- data.frame(Module = colnames(modules_leiden_matrix))
+rownames(annotation_col_leiden) <- colnames(modules_leiden_matrix)
+annotation_row_leiden <- data.frame(Cluster = rownames(modules_leiden_matrix))
+rownames(annotation_row_leiden) <- rownames(modules_leiden_matrix)
+
+annotation_col_wilcoxon <- data.frame(Module = colnames(modules_wilcoxon_matrix))
+rownames(annotation_col_wilcoxon) <- colnames(modules_wilcoxon_matrix)
+annotation_row_wilcoxon <- data.frame(Cluster = rownames(modules_wilcoxon_matrix))
+rownames(annotation_row_wilcoxon) <- rownames(modules_wilcoxon_matrix)
+
+## Data frames to asign mlabel color scales
+modules_colors <- data.frame(module_name = module_name, module_color = module_name)
+cluster_colors <- merge(cluster2subtypes, cell_subtype_colors, by = "cell_subtype")
+
+## ADdd to a single data frame
+atlas_network_colors <- list(
+  Module = modules_colors$module_color,    
+  Cluster = cluster_colors$color           
+)
+names(atlas_network_colors$Module) <- modules_colors$module_name
+names(atlas_network_colors$Cluster) <- cluster_colors$cell_cluster
+
+## Pheatmaps
