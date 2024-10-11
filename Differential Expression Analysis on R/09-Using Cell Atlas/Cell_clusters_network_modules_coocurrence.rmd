@@ -1,8 +1,5 @@
 ## Identify how manyy cell markers are present in each of the coexpression network modules
 
-## Data frame to asign module colors
-modules_colors <- data.frame(module_name = module_name, module_color = module_name)
-
 ## Extract cell markers gene_id's from wilcoxond and logaritmic regresión leiden algoritm lists
 leiden2net <- lapply(list_of_leiden, function(x) x$names)
 names(leiden2net) <- names(list_of_leiden)
