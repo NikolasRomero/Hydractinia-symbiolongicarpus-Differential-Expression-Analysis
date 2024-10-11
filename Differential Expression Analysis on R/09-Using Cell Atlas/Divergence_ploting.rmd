@@ -5,99 +5,95 @@ library(ggplo2)
 library(reshape2)
 
 ## Define color palette
-cell_type_colors <- c(
-  "i-cells, early and mixed progenitors" = "#ff6666",    
-  "sperm and spermatogenesis" = "#66cccc",              
-  "neurones" = "#3366cc",                               
-  "nematoblasts and nematocytes" = "#9370DB",           
-  "Conodipine + cells" = "#ff99cc",                     
-  "digestive gland cells" = "#99cc66",                  
-  "mucosal gland cells" = "#99ccff",                    
-  "epithelial" = "#ffcc99",                             
-  "epitheliomuscular" = "#cc0000",                      
-  "Shematrin-like+ cells" = "#ff9900",                  
-  "unannotated" = "#999999"                             
-)
+cell_colors  <- c("prog_i-cell" = "#cc3333", "prog_early" = "#ff6666", "prog_mixed" = "#ff9999", "gmt_1" = "#339999", "gmt_2" = "#66cccc", "ne_Rf/Glw+" = "#003366", "ne_Inv+" = "#3366cc", "ne_Fax+" = "#6699ff", "ne_Pkdrej+" = "#99ccff", "ne_4" = "#cce6ff", "nc_Tchh1+" = "#5e3fbd", "nb_1" = "#9370DB", "nc_Tchh2+" = "#b6a4de", "nb_Hrnr+" = "#d8c8eb", "nb_3" = "#ede4f7", "Cdpi3+" = "#cc6699", "Cdpi1+" = "#ff99cc", "Cdpi2+" = "#ffcce6", "gl_Nas4+" = "#669933", "gl_Nas14+" = "#99cc66", "gl_Chitinase2+" = "#cce6b2", "gl_Rsp+" = "#6699cc", "gl_4" = "#99ccff", "ep_1" = "#cc9966", "ep_2" = "#ffcc99", "ep_4" = "#ffddbb", "ep_5" = "#ffebcc", "ep_6" = "#ffeedd", "ep_7" = "#fff5e6", "ep_8" = "#fff9f0", "ep_9" = "#fffaf2", "ep_3" = "#ffe0cc", "em_1" = "#990000", "em_2" = "#cc0000", "em_3" = "#ff0000", "em_4" = "#ff3333", "em_5" = "#ff6666","em_Shem+" = "#ff9900", "N/A" = "#999999")
+cell_subtype_colors <- stack(cell_colors)
+colnames(cell_subtype_colors) <- c("color", "cell_subtype")
 
 ## Transform data ffrom lists to data frames
 plot_data_leiden <- do.call(rbind, lapply(names(classified_cell_types_leiden), function(cell_type) {
-  clusters <- classified_cell_types_leiden[[cell_type]]
-  do.call(rbind, lapply(names(clusters), function(cluster) {
-    df <- clusters[[cluster]]
-    positive_genes <- sum(df$LFC > 0)
-    negative_genes <- sum(df$LFC < 0)
-    data.frame(
-      cell_type = cell_type,
-      cluster = cluster,
-      positive = positive_genes,
-      negative = -negative_genes, 
-      color = cell_type_colors[cell_type] 
-    )
+  do.call(rbind, lapply(names(classified_cell_types_leiden[[cell_type]]), function(cell_subtype) {
+    do.call(rbind, lapply(names(classified_cell_types_leiden[[cell_type]][[cell_subtype]]), function(cell_cluster) {
+      df <- classified_cell_types_leiden[[cell_type]][[cell_subtype]][[cell_cluster]]
+      data.frame(
+        cell_type = cell_type,
+        cell_subtype = cell_subtype,
+        cell_cluster = cell_cluster,
+        positive_genes = sum(df$LFC > 0),
+        negative_genes = sum(df$LFC < 0)
+      )
+    }))
   }))
 }))
 
 plot_data_wilcoxon <- do.call(rbind, lapply(names(classified_cell_types_wilcoxon), function(cell_type) {
-  clusters <- classified_cell_types_wilcoxon[[cell_type]]
-  do.call(rbind, lapply(names(clusters), function(cluster) {
-    df <- clusters[[cluster]]
-    positive_genes <- sum(df$LFC > 0)
-    negative_genes <- sum(df$LFC < 0)
-    data.frame(
-      cell_type = cell_type,
-      cluster = cluster,
-      positive = positive_genes,
-      negative = -negative_genes, 
-      color = cell_type_colors[cell_type] 
-    )
+  do.call(rbind, lapply(names(classified_cell_types_wilcoxon[[cell_type]]), function(cell_subtype) {
+    do.call(rbind, lapply(names(classified_cell_types_wilcoxon[[cell_type]][[cell_subtype]]), function(cell_cluster) {
+      df <- classified_cell_types_wilcoxon[[cell_type]][[cell_subtype]][[cell_cluster]]
+      data.frame(
+        cell_type = cell_type,
+        cell_subtype = cell_subtype,
+        cell_cluster = cell_cluster,
+        positive_genes = sum(df$LFC > 0),
+        negative_genes = sum(df$LFC < 0)
+      )
+    }))
   }))
 }))
 
 ## Reshape the data to plot
+plot_data_melt_leiden <- reshape2::melt(plot_data_leiden, id.vars = c("cell_type", "cell_subtype", "cell_cluster"),
+                                 variable.name = "LFC_type", value.name = "gene_count")
+plot_data_melt_leiden$gene_count[plot_data_melt_leiden$LFC_type == "negative_genes"] <- 
+  -plot_data_melt_leiden$gene_count[plot_data_melt_leiden$LFC_type == "negative_genes"]
+plot_data_melt_leiden$cell_subtype <- factor(plot_data_melt_leiden$cell_subtype, levels = cell_subtype_colors$cell_subtype)
 
-plot_data_leiden_melt <- melt(plot_data_leiden, id.vars = c("cell_type", "cluster", "color"),
-                                variable.name = "type", value.name = "gene_count")
 
-plot_data_wilcoxon_melt <- melt(plot_data_wilcoxon, id.vars = c("cell_type", "cluster", "color"),
-                                variable.name = "type", value.name = "gene_count")
+plot_data_melt_wilcoxon <- reshape2::melt(plot_data_wilcoxon, id.vars = c("cell_type", "cell_subtype", "cell_cluster"),
+                                 variable.name = "LFC_type", value.name = "gene_count")
+plot_data_melt_wilcoxon$gene_count[plot_data_melt_wilcoxon$LFC_type == "negative_genes"] <- 
+  -plot_data_melt_wilcoxon$gene_count[plot_data_melt_wilcoxon$LFC_type == "negative_genes"]
+plot_data_melt_wilcoxon$cell_subtype <- factor(plot_data_melt_wilcoxon$cell_subtype, levels = cell_subtype_colors$cell_subtype)
 
 ## Plot the divergence plots
-
-ldp <- ggplot(plot_data_leiden_melt, aes(x = gene_count, y = reorder(cluster, gene_count), fill = cell_type)) +
+ldp <- ggplot(plot_data_melt_leiden, aes(x = gene_count, y = cell_cluster, fill = cell_subtype)) +
   geom_bar(stat = "identity", position = "identity") +
-  geom_vline(xintercept = 0, color = "black", size = 1) +  
-  facet_grid(cell_type ~ ., scales = "free_y", space = "free") +
-  scale_fill_manual(values = cell_type_colors, name = "Cell Type") +
-  labs(x = "Number of Genes", y = "Clusters", title = "Diverging Bar Plot by Cell Type and Cluster (Leiden)") +
+  facet_grid(cell_type ~ ., scales = "free", space = "free") + 
+  scale_fill_manual(values = setNames(cell_subtype_colors$color, cell_subtype_colors$cell_subtype)) +  
+  geom_vline(xintercept = 0, color = "black", size = 0.5) +  
   theme_minimal() +
-  theme(
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    axis.text.y = element_text(size = 10),
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
-    legend.position = "right",
-    legend.key.size = unit(0.4, "cm"),  
-    legend.text = element_text(size = 8),  
-    strip.text.y = element_blank()  
-  ) +
-  scale_y_discrete(labels = plot_data_leiden$cluster)
+  labs(x = "Number of Genes", y = "Cell Clusters", fill = "Cell Subtype") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        strip.text.y.right = element_blank(),  
+        axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right") +  
+  guides(fill = guide_legend(ncol = 1)) 
 
-wdp <- ggplot(plot_data_wilcoxon_melt, aes(x = gene_count, y = reorder(cluster, gene_count), fill = cell_type)) +
+wdp <- ggplot(plot_data_melt_wilcoxon, aes(x = gene_count, y = cell_cluster, fill = cell_subtype)) +
   geom_bar(stat = "identity", position = "identity") +
-  geom_vline(xintercept = 0, color = "black", size = 1) +  
-  facet_grid(cell_type ~ ., scales = "free_y", space = "free") +
-  scale_fill_manual(values = cell_type_colors, name = "Cell Type") +
-  labs(x = "Number of Genes", y = "Clusters", title = "Diverging Bar Plot by Cell Type and Cluster (leiden-Wilcoxon)") +
+  facet_grid(cell_type ~ ., scales = "free", space = "free") + 
+  scale_fill_manual(values = setNames(cell_subtype_colors$color, cell_subtype_colors$cell_subtype)) +  
+  geom_vline(xintercept = 0, color = "black", size = 0.5) +  
   theme_minimal() +
-  theme(
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    axis.text.y = element_text(size = 10),
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
-    legend.position = "right",
-    legend.key.size = unit(0.4, "cm"),  
-    legend.text = element_text(size = 8),  
-    strip.text.y = element_blank()  
-  ) +
-  scale_y_discrete(labels = plot_data_wilcoxon$cluster)
+  labs(x = "Number of Genes", y = "Cell Clusters", fill = "Cell Subtype") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        strip.text.y.right = element_blank(),  
+        axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right") +  
+  guides(fill = guide_legend(ncol = 1))
+
+## Merge
+ldpd <- ggdraw() +
+  draw_plot(ldp) +
+  draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+wdpd <- ggdraw() +
+  draw_plot(wdp) +
+  draw_label("B", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+combined_divergence <- plot_grid(ldpd, wdpd, ncol = 2, rel_widths = c(2, 2))
