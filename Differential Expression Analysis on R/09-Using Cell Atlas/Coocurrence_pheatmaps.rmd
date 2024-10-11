@@ -8,13 +8,13 @@ library(RColorBrewer)
 atl2net_palette <- colorRampPalette(c("white", "#FFFFE0", "#FFA07A", "#FA8072", "#FF6347", "red"))(100)
 
 ##  Define grouping datafra,es
-cell_types <- c("i-cells, early and mixed progenitors", "sperm and spermatogenesis", "neurones", "nematoblasts and nematocytes", "Conodipine + cells", "digestive gland cells", "mucosal gland cells",
-"epithelial", "epitheliomuscular", "Shematrin-like+ cells", "unannotated")  
+type2subtype <- type2subtype[!duplicated(type2subtype$cell_subtype), ]
+cell_types <- c("i-cells, early and mixed progenitors", "sperm and spermatogenesis", "neurones", "nematoblasts and nematocytes", "Conodipine + cells", "digestive gland cells", "mucosal gland cells", "epithelial", "epitheliomuscular", "Shematrin-like+ cells", "unannotated")  
 cell_types_colors <- c("#ff6666", "#66cccc", "#3366cc", "#660099", "#ff99cc", "#99cc66", "#99ccff", "#ffcc99", "#cc0000", "#ff9900",  "#999999")
 colors2cells <- data.frame(cell_type = cell_types, cell_type_color = cell_types_colors)
-cluster_colors <- merge(cluster2subtypes, cell_subtype_colors, by = "cell_subtype")
-clusters_colors <- merge(cluster_colors, type2subtype, by = "cell_subtype")
-clusters_colors <- merge(clusters_colors, colors2cells, by = "cell_type")
+cluster_colors <- merge(cluster2subtypes, cell_subtype_colors, by = "cell_subtype", all.x = TRUE)
+clusters_colors <- merge(cluster_colors, type2subtype, by = "cell_subtype", all.x = TRUE)
+clusters_colors <- merge(clusters_colors, colors2cells, by = "cell_type", all.x = TRUE)
 names(clusters_colors)[names(clusters_colors) == "color"] <- "cell_subtype_color"
 
 modules_colors <- data.frame(module_name = module_name, module_color = module_name)
@@ -24,34 +24,79 @@ module_relationship <- c(rep("related", 4),
 relationship_colors <- c(rep("red", 4),
                   rep("blue", 3),
                   rep("ivory", 20))
-modules_names <- c("green", "turquoise", "cyan", "yellow", "blue", "pink", "brown", "lightyellow", "lightcyan", "tan", "lightgreen", "orange", "salmon", "darkorange", "red", "darkred", "royalblue",
-"darkturquoise", "darkgreen", "purple", "magenta", "greenyellow", "grey60", "darkgrey", "grey", "midnightblue", "black")
+modules_names <- c("green", "turquoise", "cyan", "yellow", "blue", "pink", "brown", "lightyellow", "lightcyan", "tan", "lightgreen", "orange", "salmon", "darkorange", "red", "darkred", "royalblue", "darkturquoise", "darkgreen", "purple", "magenta", "greenyellow", "grey60", "darkgrey", "grey", "midnightblue", "black")
+
 modules_relationship_colors <- data.frame(module_relationship = module_relationship, module_name = modules_names)
 relationship_color <-  data.frame(module_name = modules_names, relationship_colors = relationship_colors)
 module2colors <- merge(modules_relationship_colors, modules_colors, by = "module_name")
 module2colors <- merge(module2colors, relationship_color, by = "module_name")
+module2colors$module_color = NULL
 
 ## Custom color scales for labels
-annotation_col_leiden <- data.frame(Module = colnames(modules_leiden_matrix))
-rownames(annotation_col_leiden) <- colnames(modules_leiden_matrix)
-annotation_row_leiden <- data.frame(Cluster = rownames(modules_leiden_matrix))
-rownames(annotation_row_leiden) <- rownames(modules_leiden_matrix)
+preannotation_col_leiden <- data.frame(module_name = colnames(modules_leiden_matrix))
+rownames(preannotation_col_leiden) <- colnames(modules_leiden_matrix)
+annotation_col_leiden <- merge(preannotation_col_leiden, module2colors, by = "module_name")
+annotation_col_leiden <- annotation_col_leiden[match(modules_relationship_colors$module_name, annotation_col_leiden$module_name), ]
+rownames(annotation_col_leiden) <- annotation_col_leiden$module_name
+annotation_row_leiden <- annotation_row_leiden[order(annotation_row_leiden$cell_type), ]
 
-annotation_col_wilcoxon <- data.frame(Module = colnames(modules_wilcoxon_matrix))
-rownames(annotation_col_wilcoxon) <- colnames(modules_wilcoxon_matrix)
-annotation_row_wilcoxon <- data.frame(Cluster = rownames(modules_wilcoxon_matrix))
-rownames(annotation_row_wilcoxon) <- rownames(modules_wilcoxon_matrix)
+preannotation_row_leiden <- data.frame(cell_cluster = rownames(modules_leiden_matrix))
+rownames(preannotation_row_leiden) <- rownames(modules_leiden_matrix)
+annotation_row_leiden <- merge(preannotation_row_leiden, clusters_colors, by.x = "row.names", by.y = "cell_cluster")
+annotation_row_leiden$Row.names = NULL
+annotation_row_leiden <- annotation_row_leiden[match(rownames(preannotation_row_leiden), annotation_row_leiden$cell_cluster), ]
+rownames(annotation_row_leiden) <- annotation_row_leiden$cell_cluster
+annotation_row_leiden$cell_cluster = NULL
+
+
+preannotation_col_wilcoxon <- data.frame(module_name = colnames(modules_wilcoxon_matrix))
+rownames(preannotation_col_wilcoxon) <- colnames(modules_wilcoxon_matrix)
+annotation_col_wilcoxon <- merge(preannotation_col_wilcoxon, module2colors, by = "module_name")
+annotation_col_wilcoxon <- annotation_col_wilcoxon[match(modules_relationship_colors$module_name, annotation_col_wilcoxon$module_name), ]
+rownames(annotation_col_wilcoxon) <- annotation_col_wilcoxon$module_name
+
+preannotation_row_wilcoxon <- data.frame(cell_cluster = rownames(modules_wilcoxon_matrix))
+rownames(preannotation_row_wilcoxon) <- rownames(modules_wilcoxon_matrix)
+annotation_row_wilcoxon <- merge(preannotation_row_wilcoxon, clusters_colors, by.x = "row.names", by.y = "cell_cluster")
+annotation_row_wilcoxon$Row.names = NULL
+annotation_row_wilcoxon <- annotation_row_wilcoxon[match(rownames(preannotation_row_wilcoxon), annotation_row_wilcoxon$cell_cluster), ]
+rownames(annotation_row_wilcoxon) <- annotation_row_wilcoxon$cell_cluster
+annotation_row_wilcoxon <- annotation_row_wilcoxon[order(annotation_row_wilcoxon$cell_type), ]
 
 ## Data frames to asign mlabel color scales
-modules_colors <- data.frame(module_name = module_name, module_color = module_name)
-cluster_colors <- merge(cluster2subtypes, cell_subtype_colors, by = "cell_subtype")
+atl_cell_subtype_colors <- annotation_row_leiden$cell_subtype_color
+names(atl_cell_subtype_colors) <- annotation_row_leiden$cell_subtype
+atl_cell_subtype_colors <- atl_cell_subtype_colors[!duplicated(names(atl_cell_subtype_colors))]
 
-## ADdd to a single data frame
-atlas_network_colors <- list(
-  Module = modules_colors$module_color,    
-  Cluster = cluster_colors$color           
+atl_cell_type_colors <- annotation_row_leiden$cell_type_color
+names(atl_cell_type_colors) <- annotation_row_leiden$cell_type
+atl_cell_type_colors <- atl_cell_type_colors[!duplicated(names(atl_cell_type_colors))]
+
+atlas_network_colors_row <- list(
+  cell_type = atl_cell_type_colors, 
+  cell_subtype = atl_cell_subtype_colors 
 )
-names(atlas_network_colors$Module) <- modules_colors$module_name
-names(atlas_network_colors$Cluster) <- cluster_colors$cell_cluster
+
+net_module_relationship_colors <- unique(annotation_col_leiden$relationship_colors)
+names(net_module_relationship_colors) <- unique(annotation_col_leiden$module_relationship)
+
+net_module_name_colors <- unique(annotation_col_leiden$module_name)
+names(net_module_name_colors) <- unique(annotation_col_leiden$module_name)
+
+atlas_network_colors_col <- list(
+  module_relationship = net_module_relationship_colors,
+  module_name = net_module_name_colors
+)
+
+## Add to a single data frame
+atlas_network_colors <- c(atlas_network_colors_row, atlas_network_colors_col)
+
+## Remove innecesary columns from labels data frames
+annotation_col_leiden$relationship_colors = NULL
+annotation_row_leiden$cell_subtype_color = NULL
+annotation_row_leiden$cell_type_color = NULL
 
 ## Pheatmaps
+
+
+
