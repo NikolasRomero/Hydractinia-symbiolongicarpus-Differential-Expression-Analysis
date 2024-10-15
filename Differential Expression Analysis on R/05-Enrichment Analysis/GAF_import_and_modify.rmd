@@ -1,6 +1,6 @@
 ## Gaf import to perform enrichment analysis and GSEA
 
-##GAF import and column extraction
+## GAF import and column extraction
 
 ## Import GAF reeplace PATH_TO/GAF.gaf for your actual file path
 gaf <- read.delim("PATH_TO/GAF.gaf", header = TRUE, comment.char = "!", stringsAsFactors = FALSE)
