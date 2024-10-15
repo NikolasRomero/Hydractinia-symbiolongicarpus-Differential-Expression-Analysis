@@ -1,102 +1,265 @@
 ## Pheatmaps of coocurrence matrix for WGCNA modules and cell atlas clusters
 
 ## Load packages
-library(pheatmap)
-library(RColorBrewer)
+library(circlize)
+library(ComplexHeatmap)
+library(cowplot)
+library(grid)
 
-## Create custom color palette
-atl2net_palette <- colorRampPalette(c("white", "#FFFFE0", "#FFA07A", "#FA8072", "#FF6347", "red"))(100)
+## Create color association vectors
+celltype2colors <- c(
+    "i-cells, early and mixed progenitors" = "#ff6666",
+    "sperm and spermatogenesis" = "#66cccc",
+    "neurones" = "#3366cc",
+    "nematoblasts and nematocytes" = "#660099",
+    "Conodipine + cells" = "#ff99cc",
+    "digestive gland cells" = "#99cc66",
+    "mucosal gland cells" = "#99ccff",
+    "epithelial" = "#ffcc99",
+    "epitheliomuscular" = "#cc0000",
+    "Shematrin-like+ cells" = "#ff9900",
+    "unannotated" = "#999999"
+)
 
-##  Define grouping datafra,es
-type2subtype <- type2subtype[!duplicated(type2subtype$cell_subtype), ]
-cell_types <- c("i-cells, early and mixed progenitors", "sperm and spermatogenesis", "neurones", "nematoblasts and nematocytes", "Conodipine + cells", "digestive gland cells", "mucosal gland cells", "epithelial", "epitheliomuscular", "Shematrin-like+ cells", "unannotated")  
-cell_types_colors <- c("#ff6666", "#66cccc", "#3366cc", "#660099", "#ff99cc", "#99cc66", "#99ccff", "#ffcc99", "#cc0000", "#ff9900",  "#999999")
-colors2cells <- data.frame(cell_type = cell_types, cell_type_color = cell_types_colors)
-cluster_colors <- merge(cluster2subtypes, cell_subtype_colors, by = "cell_subtype", all.x = TRUE)
-clusters_colors <- merge(cluster_colors, type2subtype, by = "cell_subtype", all.x = TRUE)
-clusters_colors <- merge(clusters_colors, colors2cells, by = "cell_type", all.x = TRUE)
-names(clusters_colors)[names(clusters_colors) == "color"] <- "cell_subtype_color"
+cellsubtype2colors <- c(
+  "prog_i-cell" = "#cc3333",
+  "prog_early" = "#ff6666",
+  "prog_mixed" = "#ff9999",
+  "gmt_1" = "#339999",
+  "gmt_2" = "#66cccc",
+  "ne_Rf/Glw+" = "#003366",
+  "ne_Inv+" = "#3366cc",
+  "ne_Fax+" = "#6699ff",
+  "ne_Pkdrej+" = "#99ccff",
+  "ne_4" = "#cce6ff",
+  "nc_Tchh1+" = "#5e3fbd",
+  "nb_1" = "#9370DB",
+  "nc_Tchh2+" = "#b6a4de",
+  "nb_Hrnr+" = "#d8c8eb",
+  "nb_3" = "#ede4f7",
+  "Cdpi3+" = "#cc6699",
+  "Cdpi1+" = "#ff99cc",
+  "Cdpi2+" = "#ffcce6",
+  "gl_Nas4+" = "#669933",
+  "gl_Nas14+" = "#99cc66",
+  "gl_Chitinase2+" = "#cce6b2",
+  "gl_Rsp+" = "#6699cc",
+  "gl_4" = "#99ccff",
+  "ep_1" = "#cc9966",
+  "ep_2" = "#ffcc99",
+  "ep_4" = "#ffddbb",
+  "ep_5" = "#ffebcc",
+  "ep_6" = "#ffeedd",
+  "ep_7" = "#fff5e6",
+  "ep_8" = "#fff9f0",
+  "ep_9" = "#fffaf2",
+  "ep_3" = "#ffe0cc",
+  "em_1" = "#990000",
+  "em_2" = "#cc0000",
+  "em_3" = "#ff0000",
+  "em_4" = "#ff3333",
+  "em_5" = "#ff6666",
+  "em_Shem+" = "#ff9900",
+  "N/A" = "#999999"
+)
 
-modules_colors <- data.frame(module_name = module_name, module_color = module_name)
+relationship2colors <- c(
+  "related" = "red",
+  "non significant" = "ivory",
+  "unrelated" = "blue"
+)
+
+module_colors <- c(
+  "grey" = "grey",
+  "pink" = "pink",
+  "darkorange" = "darkorange",
+  "red" = "red",
+  "salmon" = "salmon",
+  "royalblue" = "royalblue",
+  "lightcyan" = "lightcyan",
+  "darkgrey" = "darkgrey",
+  "midnightblue" = "midnightblue",
+  "grey60" = "grey60",
+  "darkred" = "darkred",
+  "cyan" = "cyan",
+  "green" = "green",
+  "turquoise" = "turquoise",
+  "tan" = "tan",
+  "yellow" = "yellow",
+  "lightgreen" = "lightgreen",
+  "orange" = "orange",
+  "darkgreen" = "darkgreen",
+  "lightyellow" = "lightyellow",
+  "magenta" = "magenta",
+  "black" = "black",
+  "darkturquoise" = "darkturquoise",
+  "purple" = "purple",
+  "brown" = "brown",
+  "blue" = "blue",
+  "greenyellow" = "greenyellow"
+)
+
+module2colors <- c(
+  "grey" = "grey",
+  "pink" = "pink",
+  "darkorange" = "darkorange",
+  "red" = "red",
+  "salmon" = "salmon",
+  "royalblue" = "royalblue",
+  "lightcyan" = "lightcyan",
+  "darkgrey" = "darkgrey",
+  "midnightblue" = "midnightblue",
+  "grey60" = "grey60",
+  "darkred" = "darkred",
+  "cyan" = "cyan",
+  "green" = "green",
+  "turquoise" = "turquoise",
+  "tan" = "tan",
+  "yellow" = "yellow",
+  "lightgreen" = "lightgreen",
+  "orange" = "orange",
+  "darkgreen" = "darkgreen",
+  "lightyellow" = "lightyellow",
+  "magenta" = "magenta",
+  "black" = "black",
+  "darkturquoise" = "darkturquoise",
+  "purple" = "purple",
+  "brown" = "brown",
+  "blue" = "blue",
+  "greenyellow" = "greenyellow"
+)
+
+##  Create missing dataframes
 module_relationship <- c(rep("related", 4),
-                  rep("non related", 3),
-                  rep("non significant", 20))
+                         rep("non significant", 20),
+                         rep("unrelated", 3))
 relationship_colors <- c(rep("red", 4),
-                  rep("blue", 3),
-                  rep("ivory", 20))
-modules_names <- c("green", "turquoise", "cyan", "yellow", "blue", "pink", "brown", "lightyellow", "lightcyan", "tan", "lightgreen", "orange", "salmon", "darkorange", "red", "darkred", "royalblue", "darkturquoise", "darkgreen", "purple", "magenta", "greenyellow", "grey60", "darkgrey", "grey", "midnightblue", "black")
+                         rep("ivory", 20),
+                         rep("blue", 3))
+modules_names <- c("green", "turquoise", "cyan", "yellow", "lightyellow", "lightcyan", "tan", "lightgreen", "orange", "salmon", "darkorange", "red", "darkred", "royalblue", "darkturquoise", "darkgreen", "purple", "magenta", "greenyellow", "grey60", "darkgrey", "grey", "midnightblue", "black", "blue", "pink", "brown")
 
-modules_relationship_colors <- data.frame(module_relationship = module_relationship, module_name = modules_names)
-relationship_color <-  data.frame(module_name = modules_names, relationship_colors = relationship_colors)
-module2colors <- merge(modules_relationship_colors, modules_colors, by = "module_name")
-module2colors <- merge(module2colors, relationship_color, by = "module_name")
-module2colors$module_color = NULL
+module_classification <- data.frame(modules_names = modules_names, module_relationship = module_relationship)
+cell_classification <- cell_classification[match(cluster2cells$cell_cluster, cell_classification$cell_cluster), ]
+rownames(cell_classification) = NULL
 
-## Custom color scales for labels
-preannotation_col_leiden <- data.frame(module_name = colnames(modules_leiden_matrix))
-rownames(preannotation_col_leiden) <- colnames(modules_leiden_matrix)
-annotation_col_leiden <- merge(preannotation_col_leiden, module2colors, by = "module_name")
-annotation_col_leiden <- annotation_col_leiden[match(modules_relationship_colors$module_name, annotation_col_leiden$module_name), ]
-rownames(annotation_col_leiden) <- annotation_col_leiden$module_name
-annotation_row_leiden <- annotation_row_leiden[order(annotation_row_leiden$cell_type), ]
+## Associate vectors to data frames
+cluster2celltype_colors <- celltype2colors[cell_classification$cell_type]
+cluster2cellsubtype_colors <- cellsubtype2colors[cell_classification$cell_subtype]
 
-preannotation_row_leiden <- data.frame(cell_cluster = rownames(modules_leiden_matrix))
-rownames(preannotation_row_leiden) <- rownames(modules_leiden_matrix)
-annotation_row_leiden <- merge(preannotation_row_leiden, clusters_colors, by.x = "row.names", by.y = "cell_cluster")
-annotation_row_leiden$Row.names = NULL
-annotation_row_leiden <- annotation_row_leiden[match(rownames(preannotation_row_leiden), annotation_row_leiden$cell_cluster), ]
-rownames(annotation_row_leiden) <- annotation_row_leiden$cell_cluster
-annotation_row_leiden$cell_cluster = NULL
+module2relationship_colors <- relationship2colors[module_classification$module_relationship]
+module2colors_colors <- module2colors[module_classification$modules_names]
 
-
-preannotation_col_wilcoxon <- data.frame(module_name = colnames(modules_wilcoxon_matrix))
-rownames(preannotation_col_wilcoxon) <- colnames(modules_wilcoxon_matrix)
-annotation_col_wilcoxon <- merge(preannotation_col_wilcoxon, module2colors, by = "module_name")
-annotation_col_wilcoxon <- annotation_col_wilcoxon[match(modules_relationship_colors$module_name, annotation_col_wilcoxon$module_name), ]
-rownames(annotation_col_wilcoxon) <- annotation_col_wilcoxon$module_name
-
-preannotation_row_wilcoxon <- data.frame(cell_cluster = rownames(modules_wilcoxon_matrix))
-rownames(preannotation_row_wilcoxon) <- rownames(modules_wilcoxon_matrix)
-annotation_row_wilcoxon <- merge(preannotation_row_wilcoxon, clusters_colors, by.x = "row.names", by.y = "cell_cluster")
-annotation_row_wilcoxon$Row.names = NULL
-annotation_row_wilcoxon <- annotation_row_wilcoxon[match(rownames(preannotation_row_wilcoxon), annotation_row_wilcoxon$cell_cluster), ]
-rownames(annotation_row_wilcoxon) <- annotation_row_wilcoxon$cell_cluster
-annotation_row_wilcoxon <- annotation_row_wilcoxon[order(annotation_row_wilcoxon$cell_type), ]
-
-## Data frames to asign mlabel color scales
-atl_cell_subtype_colors <- annotation_row_leiden$cell_subtype_color
-names(atl_cell_subtype_colors) <- annotation_row_leiden$cell_subtype
-atl_cell_subtype_colors <- atl_cell_subtype_colors[!duplicated(names(atl_cell_subtype_colors))]
-
-atl_cell_type_colors <- annotation_row_leiden$cell_type_color
-names(atl_cell_type_colors) <- annotation_row_leiden$cell_type
-atl_cell_type_colors <- atl_cell_type_colors[!duplicated(names(atl_cell_type_colors))]
-
-atlas_network_colors_row <- list(
-  cell_type = atl_cell_type_colors, 
-  cell_subtype = atl_cell_subtype_colors 
+## Generate simple annotations
+row_anno <- rowAnnotation(
+  CellType = anno_simple(cell_classification$cell_type, col = cluster2celltype_colors),
+  CellSubtype = anno_simple(cell_classification$cell_subtype, col = cluster2cellsubtype_colors)
 )
 
-net_module_relationship_colors <- unique(annotation_col_leiden$relationship_colors)
-names(net_module_relationship_colors) <- unique(annotation_col_leiden$module_relationship)
-
-net_module_name_colors <- unique(annotation_col_leiden$module_name)
-names(net_module_name_colors) <- unique(annotation_col_leiden$module_name)
-
-atlas_network_colors_col <- list(
-  module_relationship = net_module_relationship_colors,
-  module_name = net_module_name_colors
+col_anno <- columnAnnotation(
+  Relationship = anno_simple(module_classification$module_relationship, col = module2relationship_colors),
+  Module = anno_simple(module_classification$modules_names, col = module2colors_colors)
 )
 
-## Add to a single data frame
-atlas_network_colors <- c(atlas_network_colors_row, atlas_network_colors_col)
+## Create custom legends
+cell_type_legend <- Legend(
+  labels = names(celltype2colors),  # Cell type names
+  legend_gp = gpar(fill = celltype2colors),  # Corresponding colors
+  title = "Cell Type"
+)
 
-## Remove innecesary columns from labels data frames
-annotation_col_leiden$relationship_colors = NULL
-annotation_row_leiden$cell_subtype_color = NULL
-annotation_row_leiden$cell_type_color = NULL
+cell_subtype_legend <- Legend(
+  labels = names(cellsubtype2colors),  # Cell subtype names
+  legend_gp = gpar(fill = cellsubtype2colors),  # Corresponding colors
+  title = "Cell Subtype"
+)
 
-## Pheatmaps
+module_relationship_legend <- Legend(
+  labels = names(relationship2colors),  # Relationship names
+  legend_gp = gpar(fill = relationship2colors),  # Corresponding colors
+  title = "Module Relationship"
+)
+
+l_scale_legend <- Legend(
+  col_fun = colorRamp2(c(0, 30), c("white", "#B57EDC")),
+  title = "Shared Genes",
+   at = c(0, 10, 20, 30),
+  labels = c("0", "10", "20", "30")
+)
+
+w_scale_legend <- Legend(
+  col_fun = colorRamp2(c(0, 1000), c("white", "#B57EDC")),
+  title = "Shared Genes",
+   at = c(0, 250, 500, 750, 1000),
+  labels = c("0", "250", "500", "750", "1000")
+)
+
+## Merge legends
+vertical_legends <- packLegend(
+  module_relationship_legend,
+  cell_type_legend,
+  direction = "vertical",  
+  row_gap = unit(5, "mm")  
+)
+
+atlnet_legends <- packLegend(
+  cell_subtype_legend,
+  vertical_legends,
+  direction = "horizontal", 
+  column_gap = unit(5, "mm")  
+)
+
+combined_legends_leiden <- packLegend(
+  l_scale_legend,
+  atlnet_legends,
+  direction = "vertical",  
+  row_gap = unit(5, "mm")  
+)
+
+combined_legends_wilcoxon <- packLegend(
+  w_scale_legend,
+  atlnet_legends,
+  direction = "vertical",  
+  row_gap = unit(5, "mm")  
+)
+
+## Heatmaps
+lhm <- Heatmap(modules_leiden_matrix, name = "Shared Genes", 
+        col = colorRamp2(c(0, max(modules_leiden_matrix)), c("white", "#B57EDC")),
+        cluster_rows = FALSE, cluster_columns = FALSE,
+        left_annotation = row_anno,  
+        top_annotation = col_anno,    
+        show_row_names = FALSE,       
+        show_column_names = FALSE,
+        show_heatmap_legend = FALSE
+)
+
+slhm <- draw(lhm, annotation_legend_list = combined_legends_leiden)
+
+whm <- Heatmap(modules_wilcoxon_matrix, name = "Shared Genes", 
+        col = colorRamp2(c(0, max(modules_wilcoxon_matrix)), c("white", "#B57EDC")),
+        cluster_rows = FALSE, cluster_columns = FALSE,
+        left_annotation = row_anno,  
+        top_annotation = col_anno,    
+        show_row_names = FALSE,       
+        show_column_names = FALSE,
+        show_heatmap_legend = FALSE
+)
+
+swhm <- draw(whm, annotation_legend_list = combined_legends_wilcoxon)
+
+## Merge
+slhm_grob <- grid.grabExpr(draw(slhm))  
+swhm_grob <- grid.grabExpr(draw(swhm)) 
+
+slhm_lab <- ggdraw() +
+  draw_grob(slhm_grob) +
+  draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+swhm_lab <- ggdraw() +
+  draw_grob(swhm_grob) +
+  draw_label("B", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+combined_plot_hm <- plot_grid(slhm_lab, swhm_lab, ncol = 2, rel_widths = c(1, 1))
 
 
 
