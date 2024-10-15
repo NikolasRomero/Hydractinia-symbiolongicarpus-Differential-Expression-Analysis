@@ -4,6 +4,21 @@
 library(dplyr)
 library(GO.db)
 
+## GeneID-GO data curation from annotators
+All_gene2GO <- data.frame(
+  GeneID = all_annotations$GeneID, 
+  GO_ID = paste(all_annotations$gaf_GO_ID, all_annotations$emapper_GO_ID, all_annotations$pannzer_GO_ID, all_annotations$interpro_GO_ID, sep = "/")
+  )
+
+All_gene2GO <- All_gene2GO %>%
+  separate_rows(GO_ID, sep = "/")
+
+All_gene2GO <- All_gene2GO %>%
+  filter(!grepl("-", GO_ID))
+
+All_gene2GO <- All_gene2GO %>%
+  distinct(GeneID, GO_ID, .keep_all = TRUE)
+
 ## Unique GO ID's list
 unique_allgo <- na.omit(unique(All_gene2GO$GO_ID))
 
