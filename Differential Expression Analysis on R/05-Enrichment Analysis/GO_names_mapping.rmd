@@ -4,10 +4,12 @@
 library(dplyr)
 library(GO.db)
 
+## Unique GO ID's list
+unique_allgo <- na.omit(unique(All_gene2GO$GO_ID))
+
+length(unique_allgo)
+
 ## Function to asign each GO ID a GO term including obsolete GO terms
-
-unique_go_ids <- na.omit(unique(annotated_degs$GO_ID))
-
 get_go_term <- function(go_id) {
     if (go_id %in% keys(GOTERM)) {
     return(Term(GOTERM[[go_id]]))
@@ -19,10 +21,6 @@ get_go_term <- function(go_id) {
 }
 
 ## Perform the mapping
-go_annotation <- sapply(unique_go_ids, get_go_term)
-terms_to_id <- data.frame(GO_ID = names(go_annotation), GO_Term = as.character(go_annotation), stringsAsFactors = FALSE)
+allgo_annotation <- sapply(unique_allgo, get_go_term)
+all_terms_to_id <- data.frame(GO_ID = names(allgo_annotation), GO_Term = as.character(allgo_annotation), stringsAsFactors = FALSE)
 
-## 
-ids_GO <- unique(gaf$GO_ID)
-ids_GO_annotation <- sapply(ids_GO, get_go_term)
-terms_to_GO <- data.frame(GO_ID = names(ids_GO_annotation), GO_Term = as.character(ids_GO_annotation), stringsAsFactors = FALSE)
