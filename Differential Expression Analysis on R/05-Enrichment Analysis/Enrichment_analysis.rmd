@@ -1,7 +1,6 @@
 ## Enrichment analysis and GSEA
 
 ## Load Packages
-
 library(clusterProfiler)
 
 ## Enrichmnt analysis and GSEA
@@ -9,15 +8,15 @@ library(clusterProfiler)
 ## Data preparation
 
 ## Term2name and term2name variable cration
-term2gene=gaf[, c("GO_ID", "GeneID")]
-term2name=terms_to_GO[, c("GO_ID", "GO_Term")]
+term2gene=All_gene2GO
+term2name=all_terms_to_id
 
 ## Gene list for enrichment analysis
 cluster_degs = degs[, "log2FoldChange"]
 names(cluster_degs) = as.character(degs[, "GeneID"])
 
 ## Gene sorted list for GSEA
-genes <- names(cluster_degs)[abs(cluster_degs) > 0.5]
+genes <- names(cluster_degs)[abs(cluster_degs) >= 1]
 sorted_genes = sort(cluster_degs, decreasing = TRUE)
 
 ## Enrichment anlysis and GSEA
