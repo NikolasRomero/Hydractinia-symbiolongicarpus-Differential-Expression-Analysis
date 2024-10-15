@@ -94,4 +94,3 @@ w_lab <- ggdraw() +
 
 combined_plot_cell <- plot_grid(l_lab, w_lab, ncol = 2, rel_widths = c(1, 1))
 
-w
