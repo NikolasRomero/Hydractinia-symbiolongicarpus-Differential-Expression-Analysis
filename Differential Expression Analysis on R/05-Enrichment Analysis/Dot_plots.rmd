@@ -3,13 +3,7 @@
 library(clusterProfiler)
 library(ggplot2)
 
-## Draw
-EA_GO_dot <- dotplot(EA_GO, showCategory = 13) + ggtitle("Enrichment Analysis GO")
-EA_GO_dot
-
-GSEA_GO_dot <- dotplot(GSEA_GO, showCategory = 11) + ggtitle("GSEA GO")
-GSEA_GO_dot
-
+## Draw using clusterprofiler options
 EA_KEGG_dot <- dotplot(EA_KEGG, showCategory = 11) + ggtitle("Enrichment Analysis KEGG")
 EA_KEGG_dot
 
@@ -19,31 +13,106 @@ GSEA_KEGG_dot
 M_KEGG_dot <- dotplot(M_KEGG, showCategory = 9) + ggtitle("GSEA  KEGG")
 M_KEGG_dot
 
-EA_GO_dot_labeled <- ggdraw() +
-  draw_plot(EA_GO_dot) +
-  draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+## Custom dor plots
 
-GSEA_GO_dot_labeled <- ggdraw() +
-  draw_plot(GSEA_GO_dot) +
-  draw_label("B", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
-
-GO_combined_plot <- cowplot::plot_grid(EA_GO_dot_labeled, GSEA_GO_dot_labeled, ncol = 2, rel_widths = c(1, 1))
-
-## Merge plots
-
-## Load packages
-
-## some of those packages functions intefere with custerProfiler functions so i recomend to load them sepparatly
+## Load Packages
 library(cowplot)
+library(dplyr)
+library(forcats)
+library(stringr)
+library(tidyr)
 library(vegan)
 
-## Merge
-EA_dot <- ggdraw() +
-  draw_plot(xx_dot) +
+## Data preparation
+
+## Extract relevant columns from degs
+lfcids <- degs[, c("GeneID", "log2FoldChange")]
+
+## Save as new data frames
+GSEA2dot <- GSEA_GO_df
+
+EA2dot <- EA_GO_df
+
+## Separate to asigns each GeneID respective Log2FoldCHange
+EA2dot <- EA2dot %>%
+   separate_rows(geneID, sep = "/")
+EA2dot <- EA2dot %>%
+  left_join(lfcids, by = c("geneID" = "GeneID"))
+
+GSEA2dot <- GSEA2dot %>%
+   separate_rows(core_enrichment, sep = "/")
+GSEA2dot <- GSEA2dot %>%
+  left_join(lfcids, by = c("core_enrichment" = "GeneID"))
+
+## Group by parameters
+plot_EA2dot <- EA2dot %>%
+  group_by(ID, Description, p.adjust) %>%
+  summarise(
+    Count = n(),
+    has_positive = any(log2FoldChange > 0, na.rm = TRUE),
+    has_negative = any(log2FoldChange < 0, na.rm = TRUE),
+    .groups = 'drop'
+  ) %>%
+  mutate(color_class = case_when(
+    has_positive & has_negative ~ "Both",
+    has_positive ~ "Positive",
+    has_negative ~ "Negative"
+  ))
+plot_EA2dot <- plot_EA2dot %>%
+  mutate(Description = fct_reorder(Description, Count))
+
+
+plot_GSEA2dot <- GSEA2dot %>%
+  group_by(ID, Description, p.adjust) %>%
+  summarise(
+    Count = n(),
+    has_positive = any(log2FoldChange > 0, na.rm = TRUE),
+    has_negative = any(log2FoldChange < 0, na.rm = TRUE),
+    .groups = 'drop'
+  ) %>%
+  mutate(color_class = case_when(
+    has_positive & has_negative ~ "Both",
+    has_positive ~ "Positive",
+    has_negative ~ "Negative"
+  ))
+plot_GSEA2dot <- plot_GSEA2dot %>%
+  mutate(Description = fct_reorder(Description, Count))
+
+## Plot
+EA_new_dot <- ggplot(plot_EA2dot, aes(x = Count, y = Description)) +
+  geom_point(aes(size = -log10(p.adjust), color = color_class)) +  
+  scale_color_manual(values = c("Positive" = "red", "Negative" = "blue", "Both" = "purple")) + 
+  theme_minimal() +
+  labs(
+    x = "Number of Genes",
+    y = NULL,
+    color = "log2 Fold Change",
+    size = "-log10(p.adjust)"
+  ) +
+  theme(axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(size = 12))
+
+GSEA_new_dot <- ggplot(plot_GSEA2dot, aes(x = Count, y = Description)) +
+  geom_point(aes(size = -log10(p.adjust), color = color_class)) +   
+  scale_color_manual(values = c("Positive" = "red", "Negative" = "blue", "Both" = "purple")) + 
+  theme_minimal() +
+  labs(
+    x = "Number of Genes",
+    y = NULL,
+    color = "log2 Fold Change",
+    size = "-log10(p.adjust)"
+  ) +
+  theme(axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(size = 12))
+
+## Merge the plots
+EA_dot_lab <- ggdraw() +
+  draw_plot(EA_new_dot) +
   draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
 
-GSEA_dot <- ggdraw() +
-  draw_plot(yy_dot) +
+GSEA_dot_lab <- ggdraw() +
+  draw_plot(GSEA_new_dot) +
   draw_label("B", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
 
-combined_plot_dot <- plot_grid(EA_dot, GSEA_dot, ncol = 2, rel_widths = c(2, 2))
+combined_plot_dot <- plot_grid(EA_dot_lab, GSEA_dot_lab, ncol = 2, rel_widths = c(1, 1))
+
