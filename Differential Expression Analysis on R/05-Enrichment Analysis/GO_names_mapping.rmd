@@ -39,3 +39,31 @@ get_go_term <- function(go_id) {
 allgo_annotation <- sapply(unique_allgo, get_go_term)
 all_terms_to_id <- data.frame(GO_ID = names(allgo_annotation), GO_Term = as.character(allgo_annotation), stringsAsFactors = FALSE)
 
+## Cheack for missing terms
+not_found_terms <- all_terms_to_id %>%
+  filter(str_detect(GO_Term, "not found"))
+
+## Import missing terms from manually made missing-replaced go terms data frame replace PATH_TO_FILE for your actual path file
+replaced_go <- read.delim("PATH_TO_FILE", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
+names(replaced_go)[names(replaced_go) == "X.missing_GO"] <- "missing_GO"
+
+## Replace in GO_ID-GeneIDdata frame
+All_gene2GO$GO_ID <- ifelse(All_gene2GO$GO_ID %in% replaced_go$missing_GO, replaced_go$replacement_GO[match(All_gene2GO$GO_ID , replaced_go$missing_GO)], All_gene2GO$GO_ID)
+
+## Repeat name mapping and check again for missing terms
+
+not_found_terms <- all_terms_to_id %>%
+  filter(str_detect(GO_Term, "not found"))
+
+## Data frame with AmiGO database missing terms names
+not_db_terms_names <- c("tRNA-guanine transglycosylase complex", "glycerol-3-phosphate dehydrogenase (NAD+) activity", "regulation of cAMP/PKA signal transduction", "RNA ligase (GTP) activity", "chromosomal 5-methylcytosine DNA demethylation pathway", "intracellularly calcium-gated channel activity", "box C/D RNP complex", "F-actin monooxygenase activity", "nucleic acid biosynthetic process")
+
+Not_bd_terms <- data.frame(GO_ID = not_found_terms$GO_ID, GO_term = not_db_terms_names)
+all_terms_to_id$GO_Term <- ifelse(all_terms_to_id$GO_Term %in% df2$V1, df2$V2[match(df1$V1, df2$V1)], df1$V1)
+
+## Replace in mapped names data frame
+all_terms_to_id$GO_Term <- ifelse(all_terms_to_id$GO_ID %in% Not_bd_terms$GO_ID, Not_bd_terms$GO_term[match(all_terms_to_id$GO_ID, Not_bd_terms$GO_ID)], all_terms_to_id$GO_Term)
+
+
+
+
