@@ -24,8 +24,8 @@ GSEA2dom <- GSEA_GO_df
 rownames(go2dom) <- NULL
 
 ## Select relevant GO categories for both results files
-rows_EA_GO <- c(4, 5, 7, 8, 9, 10, 11, 12, 13)
-rows_GSEA_GO <- c(4, 5, 6, 7, 8, 9, 10, 11, 13, 12, 14, 15)
+rows_EA_GO <- setdiff(3:64, c(4, 5, 8, 14, 16, 48, 50, 57))
+rows_GSEA_GO <- setdiff(1:90, c(8, 12, 18, 19, 27))
 
 ## Separe and extract gene_id's from our results saved files
 EA_GO_rows <- EA2dom[rows_EA_GO, "geneID"]
