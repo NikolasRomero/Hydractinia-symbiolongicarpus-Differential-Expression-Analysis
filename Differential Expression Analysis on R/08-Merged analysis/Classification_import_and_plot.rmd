@@ -1,0 +1,19 @@
+## Import IDCP classification from excel and plot as a table
+
+## Load packages
+library(grid)
+library(gridExtra)
+library(readxl)
+
+## Load excel table as a data frame replace PATH_TO_xlsx for your actuall file path and change sheet for your actual excel file sheet
+classified_idcp <- read_excel("PATH_TO_xlsx", sheet = 1)
+
+## Create the plot object set rownames as a NULL vector
+classified_idcp_plot <- tableGrob(classified_idcp, rows = NULL)
+
+## Set png image dimentions
+png("article_table.png", width = 2050, height = 900)
+
+## Draw and export
+grid.draw(classified_idcp_plot)
+dev.off()
