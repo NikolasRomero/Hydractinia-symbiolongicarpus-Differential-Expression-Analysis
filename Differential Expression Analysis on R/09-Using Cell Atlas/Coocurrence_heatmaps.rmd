@@ -162,20 +162,20 @@ col_anno <- columnAnnotation(
 
 ## Create custom legends
 cell_type_legend <- Legend(
-  labels = names(celltype2colors),  # Cell type names
-  legend_gp = gpar(fill = celltype2colors),  # Corresponding colors
+  labels = names(celltype2colors), 
+  legend_gp = gpar(fill = celltype2colors),  
   title = "Cell Type"
 )
 
 cell_subtype_legend <- Legend(
-  labels = names(cellsubtype2colors),  # Cell subtype names
-  legend_gp = gpar(fill = cellsubtype2colors),  # Corresponding colors
+  labels = names(cellsubtype2colors),
+  legend_gp = gpar(fill = cellsubtype2colors),  
   title = "Cell Subtype"
 )
 
 module_relationship_legend <- Legend(
-  labels = names(relationship2colors),  # Relationship names
-  legend_gp = gpar(fill = relationship2colors),  # Corresponding colors
+  labels = names(relationship2colors), 
+  legend_gp = gpar(fill = relationship2colors),  
   title = "Module Relationship"
 )
 
