@@ -2,43 +2,73 @@
 ## Heatmap of most interesting IDCPs
 
 ## Load Packages
+library(circlize)
+library(ComplexHeatmap)
 library(cowplot)
-library(ggplot2)
-library(ggVennDiagram)
-library(pheatmap)
-library(png)
+library(dplyr)
 library(vegan)
 
-## Extract relevant data
-heat_rows <- ids2seq[, c("gene_id", "protein_id")]
-row_lab <- data.frame(Column_Name = ids2seq$protein_id)
-row_labels <- heat_rows$gene_id
-rownames(row_lab) <- row_labels
 
 ## Extract rlog normalized data
 select_rows <- match(heat_rows$gene_id, rownames(assay(rld)))
 select_rows <- select_rows[!is.na(select_rows)]
 
+## Calculate z-scores
+z_scores <- t(scale(t(assay(rld)[select_rows,])))
+
 ## Heatmap features
 heat_df <- as.data.frame(colData(dds)["condition"])
+heat_df$condition <- as.character(heat_df$condition)
 
-heatmap_colors <- colorRampPalette(c("blue", "ivory", "red"))(30)
-annotation_colors <- list(condition = c("Control" = "#0099FF", "Treatment" = "#FF0090"))
-annotation_row <- data.frame(protein_id = heat_rows$protein_id)
+heatmap_colors <- colorRamp2(c(-2, 0, 2), c("blue", "ivory", "red"))
+annotation_colors_lab <- c("Control" = "#0099FF", "Treatment" = "#FF0090")
+
+## Column annotation
+col_annotation <- columnAnnotation(
+  Condition = anno_simple(heat_df$condition, col = annotation_colors_lab)
+)
+
+## Make legends
+
+ph_legend <- Legend(
+  title = "Condition",
+  at = names(annotation_colors_lab),
+  legend_gp = gpar(fill = annotation_colors_lab),
+  direction = "vertical"
+)
+
+scale_ph_legend <- Legend(
+  col_fun = colorRamp2(c(-2, 0, 2), c("blue", "ivory", "red")),
+  title = "Log2FC Z-Score",
+   at = c(-2, 0, 2),
+  labels = c("-2", "0", "2")
+)
+
+## Merge legends
+combined_ph_legend <- packLegend(
+  scale_ph_legend,
+  ph_legend,
+  direction = "vertical",
+  row_gap = unit(5, "mm")
+)
 
 ## plot
-ph <- pheatmap(assay(rld)[select_rows,], cluster_rows = TRUE, show_rownames = TRUE,
-         cluster_cols = TRUE, 
-         annotation_col = heat_df, 
-         labels_row = row_lab$Column_Name, 
-         color = heatmap_colors, 
-         annotation_colors = annotation_colors)
+ph <- Heatmap(z_scores,
+              cluster_rows = TRUE,
+              cluster_columns = TRUE,
+              show_row_names = TRUE, 
+              show_heatmap_legend = FALSE,
+              top_annotation = col_annotation, 
+              col = heatmap_colors,  
+              row_names_gp = gpar(fontsize = 12),  
+              column_names_gp = gpar(fontsize = 18)) 
 
-ph
 
-## IDCPs module membership
+lph <- draw(ph,annotation_legend_list = combined_ph_legend)  
 
-## Prepare lits
+## IDCPs module and cell type membership
+
+## Prepare lists
 green2idcp <- ids2seq[ids2seq$gene_id %in% rownames(green), ]
 green2idcp <- green2idcp$gene_id
 
@@ -51,59 +81,317 @@ cyan2idcp <- cyan2idcp$gene_id
 yellow2idcp <- ids2seq[ids2seq$gene_id %in% rownames(yellow), ]
 yellow2idcp <- yellow2idcp$gene_id
 
-## Venn plot
-venn_lists_dom <- list(Green = green2idcp, Turquoise = turquoise2idcp, Cyan = cyan2idcp, Yellow = yellow2idcp)
-venn_dom <- Venn(venn_lists_dom)
-venn_data_dom <- process_data(venn_dom)
-venn_plot_dom <- ggplot() +
-  geom_polygon(aes(X, Y, fill = name, group = id), 
-               data = venn_regionedge(venn_data_dom),
-               show.legend = FALSE) +
-  geom_path(aes(X, Y, color = id, group = id), 
-            data = venn_setedge(venn_data_dom), 
-            linewidth = 1,
-            show.legend = FALSE) +
-  geom_text(aes(X, Y, label = name),
-            size = 7,
-            data = venn_setlabel(venn_data_dom)) +
-  geom_label(aes(X, Y, label = count),
-             size = 7,
-             data = venn_regionlabel(venn_data_dom),
-             alpha = 0) +
-  scale_fill_manual(values = c("Green" = "#00FF00", "Turquoise" = "#40E0D0", "Cyan" = "#00FFFF", "Yellow" = "#FFFF00", "Green/Turquoise" = "#20ef68", "Green/Cyan" = "#00ff7f", "Green/Yellow" = "#7fff00", "Turquoise/Cyan" = "#20efe7", "Turquoise/Yellow" = "#9fef68", "Cyan/Yellow" = "#7fff7f", "Green/Turquoise/Cyan" = "#10f7b3", "Green/Turquoise/Yellow" = "#8ff734", "Green/Cyan/Yellow" = "#7fff3f", "Turquoise/Cyan/Yellow" = "#8ff773", "Green/Turquoise/Cyan/Yellow" = "#5fef68")) + 
-  scale_color_manual(values = c("1"= "black", "2" = "black", "3" = "black", "4" = "black")) +
-  coord_equal() +
-  theme_void() 
+## Merge lists into a data frame
+modules2idcp <- data.frame(
+  gene_id = c(green2idcp, turquoise2idcp, yellow2idcp), 
+  Module = rep(c("green", "turquoise", "yellow"),      
+               times = c(length(green2idcp), length(turquoise2idcp), length(yellow2idcp))))
 
-venn_plot_dom
+## Search for IDCP's GeneID in cell type lists
 
-## Merge plots
+## Function to search
+search_gene_matches <- function(classified_list, ids2seq) {
+  matches <- list() 
+  for(cell_type in names(classified_list)) {
+    matches[[cell_type]] <- list()  
+    for(cell_subtype in names(classified_list[[cell_type]])) {
+      matches[[cell_type]][[cell_subtype]] <- list()  
+      for(cluster in names(classified_list[[cell_type]][[cell_subtype]])) {
+        sublist_genes <- classified_list[[cell_type]][[cell_subtype]][[cluster]]$gene
+        matching_genes <- ids2seq[ids2seq$gene_id %in% sublist_genes, ]
+        if(nrow(matching_genes) > 0) {
+          matches[[cell_type]][[cell_subtype]][[cluster]] <- matching_genes
+        }
+      }
+      if (length(matches[[cell_type]][[cell_subtype]]) == 0) {
+        matches[[cell_type]][[cell_subtype]] <- NULL
+      }
+    }
+    if (length(matches[[cell_type]]) == 0) {
+      matches[[cell_type]] <- NULL
+    }
+  }
+  return(matches)
+}
 
-## As heatmaps cannot be saved as objects fot his function save as png image
-png("PH.png", width = 800, height = 800)
+## Search
+matching_ids2seq_list_leiden <- search_gene_matches(classified_cell_types_leiden, ids2seq)
+matching_ids2seq_list_wilcoxon <- search_gene_matches(classified_cell_types_wilcoxon, ids2seq)
 
-pheatmap(assay(rld)[select_rows,], cluster_rows = TRUE, show_rownames = TRUE,
-         cluster_cols = TRUE, 
-         annotation_col = heat_df, 
-         labels_row = row_lab$Column_Name, 
-         color = heatmap_colors, 
-         annotation_colors = annotation_colors)
+## Flatten lists into data frames
 
-dev.off()
+## Function to flatten
+flatten_classified_list <- function(classified_list) {
+  result <- data.frame(gene_id = character(), cell_type = character(), cell_subtype = character(), stringsAsFactors = FALSE)
+  
+  for(cell_type in names(classified_list)) {
+    for(cell_subtype in names(classified_list[[cell_type]])) {
+      for(cluster in names(classified_list[[cell_type]][[cell_subtype]])) {
+        genes <- classified_list[[cell_type]][[cell_subtype]][[cluster]]$gene
+        temp_df <- data.frame(gene_id = genes, cell_type = cell_type, cell_subtype = cell_subtype)
+        result <- rbind(result, temp_df)
+      }
+    }
+  }
+  return(result)
+}
 
-ph_image <- readPNG("PH.png")
-ph_raster <- rasterGrob(ph_image, width = unit(1, "npc"), height = unit(1, "npc"))
+## Flatten
+flattened_data_leiden <- flatten_classified_list(matching_ids2seq_list_leiden)
+flattened_data_wilcoxon <- flatten_classified_list(matching_ids2seq_list_wilcoxon)
 
-## Add labels
-ph_lab <- ggdraw() +
-  draw_plot(ph_raster) +
-  draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+flattened_data_wilcoxon <- flattened_data_wilcoxon %>%
+  distinct()
 
-venn_dom_lab <- ggdraw() +
-  draw_plot(venn_plot_dom) +
-  draw_label("B", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+## IDCP module colors vector
+idcp_module_colors <- c("green" = "green", "turquoise" = "turquoise", "yellow" = "yellow")
+
+## Merge cell type data to module data
+merged_idcp_leiden <- merge(flattened_data_leiden, modules2idcp, by = "gene_id", all.x = TRUE)
+merged_idcp_wilcoxon <- merge(flattened_data_wilcoxon, modules2idcp, by = "gene_id", all.x = TRUE)
+
+## Make the heatmap matrix
+idcp_matrix_leiden <- table(merged_idcp_leiden$gene_id, merged_idcp_leiden$cell_subtype)
+idcp_matrix_wilcoxon <- table(merged_idcp_wilcoxon$gene_id, merged_idcp_wilcoxon$cell_subtype)
+
+## Color scales for labels
+celltype_idcp_leiden_colors <- c(
+  "Conodipine + cells" = "#FF6699",
+  "digestive gland cells" = "#99CC33",
+  "epithelial" = "#FFCC99",
+  "epitheliomuscular" = "#FF3333",
+  "mucosal gland cells" = "#6699FF",
+  "nematoblasts and nematocytes" = "#660099",
+  "unannotated" = "#999999"
+)
+
+cellsubtype_idcp_leiden_colors <- c(
+  "gl_Nas4+" = "#669933",
+  "gl_Nas14+" = "#99cc66",
+  "gl_Chitinase2+" = "#cce6b2",
+  "nc_Tchh1+" = "#5e3fbd",
+  "gl_Rsp+" = "#6699cc",
+  "em_2" = "#cc0000",
+  "N/A" = "#999999",
+  "Cdpi1+" = "#ff99cc",
+  "ep_8" = "#fff9f0"
+)
+
+celltype_idcp_wilcoxon_colors <- c(
+    "i-cells, early and mixed progenitors" = "#ff6666",
+    "sperm and spermatogenesis" = "#66cccc",
+    "nematoblasts and nematocytes" = "#660099",
+    "digestive gland cells" = "#99cc66",
+    "mucosal gland cells" = "#99ccff",
+    "epithelial" = "#ffcc99",
+    "epitheliomuscular" = "#cc0000",
+    "unannotated" = "#999999"
+)
+
+cellsubtype_idcp_wilcoxon_colors <- c(
+  "prog_i-cell" = "#cc3333",
+  "prog_early" = "#ff6666",
+  "gmt_1" = "#339999",
+  "nc_Tchh1+" = "#5e3fbd",
+  "nc_Tchh2+" = "#b6a4de",
+  "gl_Nas4+" = "#669933",
+  "gl_Nas14+" = "#99cc66",
+  "gl_Chitinase2+" = "#cce6b2",
+  "gl_Rsp+" = "#6699cc",
+  "ep_2" = "#ffcc99",
+  "ep_4" = "#ffddbb",
+  "ep_5" = "#ffebcc",
+  "ep_6" = "#ffeedd",
+  "ep_8" = "#fff9f0",
+  "ep_9" = "#fffaf2",
+  "ep_3" = "#ffe0cc",
+  "em_1" = "#990000",
+  "em_2" = "#cc0000",
+  "em_3" = "#ff0000",
+  "em_4" = "#ff3333",
+  "em_5" = "#ff6666",
+  "N/A" = "#999999"
+)
+
+## Heatmap color palette
+heatmap_colors_idcp <- colorRamp2(c(0, 1), c("white", "#B57EDC"))
+
+## Adjust data to annotations
+
+## Make cell subtypes unique
+unique_cell_subtypes_leiden <- colnames(idcp_matrix_leiden)
+unique_cell_subtypes_wilcoxon <- colnames(idcp_matrix_wilcoxon)
+
+## Merge cell type data
+filtered_merged_leiden <- merged_idcp_leiden[merged_idcp_leiden$cell_subtype %in% unique_cell_subtypes_leiden, ]
+filtered_merged_leiden <- filtered_merged_leiden[match(unique_cell_subtypes_leiden, filtered_merged_leiden$cell_subtype), ]
+
+filtered_merged_wilcoxon <- merged_idcp_wilcoxon[merged_idcp_wilcoxon$cell_subtype %in% unique_cell_subtypes_wilcoxon, ]
+filtered_merged_wilcoxon <- filtered_merged_wilcoxon[match(unique_cell_subtypes_wilcoxon, filtered_merged_wilcoxon$cell_subtype), ]
+
+## Column celltype nnotation
+combined_annotation_leiden <- columnAnnotation(
+  CellType = anno_simple(filtered_merged_leiden$cell_type, col = celltype_idcp_leiden_colors),
+  CellSubtype = anno_simple(filtered_merged_leiden$cell_subtype, col = cellsubtype_idcp_leiden_colors)
+)
+
+combined_annotation_wilcoxon <- columnAnnotation(
+  CellType = anno_simple(filtered_merged_wilcoxon$cell_type, col = celltype_idcp_wilcoxon_colors),
+  CellSubtype = anno_simple(filtered_merged_wilcoxon$cell_subtype, col = cellsubtype_idcp_wilcoxon_colors)
+)
+
+## Make modules unique
+unique_gene_ids_leiden <- rownames(idcp_matrix_leiden)
+unique_gene_ids_wilcoxon <- rownames(idcp_matrix_wilcoxon)
+
+## Merge the modules data
+filtered_row_data_leiden <- merged_idcp_leiden[merged_idcp_leiden$gene_id %in% unique_gene_ids_leiden, ]
+filtered_row_data_leiden <- filtered_row_data_leiden[match(unique_gene_ids_leiden, filtered_row_data_leiden$gene_id), ]
+
+filtered_row_data_wilcoxon <- merged_idcp_wilcoxon[merged_idcp_wilcoxon$gene_id %in% unique_gene_ids_wilcoxon, ]
+filtered_row_data_wilcoxon <- filtered_row_data_wilcoxon[match(unique_gene_ids_wilcoxon, filtered_row_data_wilcoxon$gene_id), ]
+
+## Row modules annotation
+idcp_row_leiden <- rowAnnotation(
+  Module = anno_simple(filtered_row_data_leiden$Module, col = idcp_module_colors)
+)
+
+idcp_row_wilcoxon <- rowAnnotation(
+  Module = anno_simple(filtered_row_data_wilcoxon$Module, col = idcp_module_colors)
+)
+
+## Make legends
+
+## Heatmap color palette scale legend
+heatmap_idcp_legend <- Legend(
+  title = "Gene Counts",
+  at = c(0, 0.5, 1),
+  labels = c("0", "0.5", "1"),
+  legend_gp = gpar(fill = c("white", "#B57EDC")),
+  direction = "vertical"
+)
+
+## Cell types legends
+celltype_idcp_legend_leiden <- Legend(
+  title = "Cell Type",
+  at = names(celltype_idcp_leiden_colors),
+  legend_gp = gpar(fill = celltype_idcp_leiden_colors),
+  direction = "vertical"
+)
+
+celltype_idcp_legend_wilcoxon <- Legend(
+  title = "Cell Type",
+  at = names(celltype_idcp_wilcoxon_colors),
+  legend_gp = gpar(fill = celltype_idcp_wilcoxon_colors),
+  direction = "vertical"
+)
+
+## Cell suubtype legends
+cellsubtype_idcp_legend_leiden <- Legend(
+  title = "Cell Subtype",
+  at = names(cellsubtype_idcp_leiden_colors),
+  legend_gp = gpar(fill = cellsubtype_idcp_leiden_colors),
+  direction = "vertical"
+)
+
+cellsubtype_idcp_legend_wilcoxon <- Legend(
+  title = "Cell Subtype",
+  at = names(cellsubtype_idcp_wilcoxon_colors),
+  legend_gp = gpar(fill = cellsubtype_idcp_wilcoxon_colors),
+  direction = "vertical"
+)
+
+## Module legends
+module_idcp_legend <- Legend(
+  title = "Module",
+  at = names(module_colors),
+  legend_gp = gpar(fill = module_colors),
+  direction = "vertical"
+)
+
+## Merge legends
+
+## Cell type data + heatmap scale + module data
+cell_module_legend_leiden <- packLegend(
+  heatmap_idcp_legend,
+  celltype_idcp_legend_leiden,
+  module_idcp_legend,  
+  direction = "vertical"  
+)
+
+cell_module_legend_wilcoxon <- packLegend(
+  heatmap_idcp_legend,
+  celltype_idcp_legend_wilcoxon,
+  module_idcp_legend,  
+  direction = "vertical"  
+)
+
+## Merged legends + cell cubtype
+combined_legend_leiden <- packLegend(
+  cell_module_legend_leiden,
+  cellsubtype_idcp_legend_leiden,
+  direction = "vertical"  
+)
+
+combined_legend_wilcoxon <- packLegend(
+  cell_module_legend_wilcoxon,
+  cellsubtype_idcp_legend_wilcoxon,
+  direction = "vertical"  
+)
+
+## Heatmaps
+ilhm <- Heatmap(idcp_matrix_leiden,
+        name = "Gene Counts",
+        top_annotation = combined_annotation_leiden,
+        left_annotation = idcp_row_leiden,
+        col = heatmap_colors_idcp,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        show_row_names = TRUE,  
+        show_column_names = FALSE,
+        show_heatmap_legend = TRUE)
+
+lilhm <- draw(ilhm,annotation_legend_list = combined_idcp_legend_leiden)
+
+iwhm <- Heatmap(idcp_matrix_wilcoxon,
+        name = "Gene Counts",
+        top_annotation = combined_annotation_wilcoxon,
+        left_annotation = idcp_row_wilcoxon,
+        col = heatmap_colors_idcp,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        show_row_names = TRUE,  
+        show_column_names = FALSE,
+        show_heatmap_legend = TRUE)
+
+liwhm <- draw(iwhm,annotation_legend_list = combined_idcp_legend_wilcoxon)
 
 ## Merge
-combined_plot_idcp <- plot_grid(ph_lab, venn_dom_lab, ncol = 2, rel_widths = c(2, 1))
 
-combined_plot_idcp 
+## Merge module celltype heatmaps between them
+lilhm_grob <- grid.grabExpr(draw(lilhm))  
+liwhm_grob <- grid.grabExpr(draw(liwhm)) 
+
+lilhm_lab <- ggdraw() +
+  draw_grob(lilhm_grob) +
+  draw_label("B", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+liwhm_lab <- ggdraw() +
+  draw_grob(liwhm_grob) +
+  draw_label("C", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+BC_hms <- plot_grid(lilhm_lab, liwhm_lab, nrow = 2, rel_widths = c(1, 1.5))
+
+## Merge module-celltype heatmaps with expressión heatmap
+ph_grob <- grid.grabExpr(draw(lph)) 
+
+ph_lab <- ggdraw() +
+  draw_grob(ph_grob) +
+  draw_label("A", x = 0, y = 1, hjust = -0.1, vjust = 1.5, size = 12, fontface = 'bold')
+
+combined_plot_hms <- plot_grid(ph_lab, BC_hms, ncol = 2, rel_widths = c(4, 3))
+
+
+
+
+
