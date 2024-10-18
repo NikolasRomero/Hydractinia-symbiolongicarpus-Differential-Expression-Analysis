@@ -17,8 +17,14 @@ process_multiple_fasta_files <- function(input_files_head, output_directory_head
     file_name <- basename(file_path)
     sequences <- readAAStringSet(file_path) 
     original_headers <- names(sequences)
-    cleaned_headers <- gsub(".*\\|(XP_\\d+\\.\\d)\\|.*?\\[(.*)\\] (.*)", "\\1 \\3 [\\2]", original_headers)
-    names(sequences) <- cleaned_headers
+    modified_headers <- gsub("\\|", "\"", original_headers)
+    modified_headers <- sub("(.*?)\"(.*?)\"(.*)", "\\1\\3 \"\\2\"", modified_headers)
+    modified_headers <- gsub("\\[.*?=.*?\\]", "ñ", modified_headers)
+    modified_headers <- sub(".*ñ", "ñ", modified_headers)
+    modified_headers <- gsub("ñ", "", modified_headers)
+    modified_headers <- sub("(.*?)\"(.*?)\"", "\"\\2\" \\1", modified_headers)
+    modified_headers <- gsub("\"", "", modified_headers)
+    names(sequences) <- modified_headers
     output_file_path <- file.path(output_directory_head, file_name)
     writeXStringSet(sequences, output_file_path)
     cat("Processed:", file_name, "-> Saved to:", output_file_path, "\n")
