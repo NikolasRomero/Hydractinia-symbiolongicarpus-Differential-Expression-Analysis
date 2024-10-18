@@ -1,0 +1,54 @@
+## Detete the innecesary information from the COBALT download files and the gaps from COBALT aligment
+
+##Load packages
+library(Biostrings)
+
+## Define input directory and files and output directory
+input_directory <- "~/IEI/Maestria/Tesis/Tesis tras burnout/Tesis/IDCP/Cleanned"
+input_files_head <- list.files(input_directory, pattern = "\\.fasta$", full.names = TRUE)
+output_directory_head <- "~/IEI/Maestria/Tesis/Tesis tras burnout/Tesis/IDCP/Cleanned"
+
+## Function to delete the innecesary information from the sequence headers
+process_multiple_fasta_files <- function(input_files_head, output_directory_head) {
+  if (!dir.exists(output_directory_head)) {
+    dir.create(output_directory_head, recursive = TRUE)
+  }
+  for (file_path in input_files_head) {
+    file_name <- basename(file_path)
+    sequences <- readAAStringSet(file_path) 
+    original_headers <- names(sequences)
+    cleaned_headers <- gsub(".*\\|(XP_\\d+\\.\\d)\\|.*?\\[(.*)\\] (.*)", "\\1 \\3 [\\2]", original_headers)
+    names(sequences) <- cleaned_headers
+    output_file_path <- file.path(output_directory_head, file_name)
+    writeXStringSet(sequences, output_file_path)
+    cat("Processed:", file_name, "-> Saved to:", output_file_path, "\n")
+  }
+}
+
+## Apply the function
+process_multiple_fasta_files(input_files_head, output_directory_head)
+
+## Define input files and output directory
+input_files <- list.files(input_directory, pattern = "\\.fasta$", full.names = TRUE)
+output_directory <- "~/IEI/Maestria/Tesis/Tesis tras burnout/Tesis/MEGA"
+
+## Function to revert the aligments to original unalign sequences
+process_alignments <- function(input_files, output_directory) {
+  if (!dir.exists(output_directory)) {
+    dir.create(output_directory, recursive = TRUE)
+  }
+  for (file_path in input_files) {
+   file_name <- basename(file_path)
+    alignment <- readAAStringSet(file_path)
+    headers <- names(alignment)
+    sequences_no_gaps <- gsub("[.-]", "", as.character(alignment))
+    alignment_no_gaps <- AAStringSet(sequences_no_gaps)
+    names(alignment_no_gaps) <- headers
+    output_file_path <- file.path(output_directory, file_name)
+    writeXStringSet(alignment_no_gaps, output_file_path)
+    cat("Processed:", file_name, "-> Saved to:", output_file_path, "\n")
+  }
+}
+
+## Apply the function
+process_alignments(input_files, output_directory)
