@@ -3,6 +3,9 @@
 ## Load packages
 library(dplyr)
 
+## Set colors as a dataframe
+module_gene_mapping <- as.data.frame(bwnet$colors)
+
 ## Extraction function
 get_module_genes <- function(module_color) {
    module_genes <- module_gene_mapping %>%
