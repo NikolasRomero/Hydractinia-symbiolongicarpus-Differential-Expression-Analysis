@@ -23,6 +23,9 @@ names(allres)[names(allres) == "X.baseMean"] <- "baseMean"
 ## Remove innecesary text
 allres$GeneID <- gsub(del, "", allres$GeneID)
 
+## Set colors as a dataframe
+module_gene_mapping <- as.data.frame(bwnet$colors)
+
 ## Function to extract al module genes and classify them into list inside a list
 get_genes_by_color <- function(module_colors, module_gene_mapping, allres) {
   genes_by_color <- list()
