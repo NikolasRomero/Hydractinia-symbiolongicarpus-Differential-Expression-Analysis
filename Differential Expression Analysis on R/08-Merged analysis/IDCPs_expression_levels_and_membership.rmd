@@ -8,6 +8,8 @@ library(cowplot)
 library(dplyr)
 library(vegan)
 
+## Extract relevant columns
+heat_rows <- ids2seq[, c("gene_id", "protein_id")]
 
 ## Extract rlog normalized data
 select_rows <- match(heat_rows$gene_id, rownames(assay(rld)))
