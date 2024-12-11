@@ -1,0 +1,40 @@
+model_results <- lapply(alignments_list, function(alignment) {
+  tryCatch({
+    modelTest(alignment)
+  }, error = function(e) {
+    message("Error performing model test for alignment: ", e)
+    NULL
+  })
+})
+if (!is.null(model_results[[1]])) {
+  print(model_results[[1]])
+}
+
+
+alignment_names <- names(alignments_list)  
+
+best_models_bic <- lapply(seq_along(model_results), function(i) {
+  result <- model_results[[i]]
+  if (!is.null(result)) {
+    best_model_bic <- result[which.min(result$BIC), ]
+    data.frame(
+      Name = alignment_names[i],
+      Model = best_model_bic$Model,
+      BIC = best_model_bic$BIC,
+      AIC = best_model_bic$AIC
+    )
+  } else {
+    return(NULL)
+  }
+})
+
+best_models_bic_df <- do.call(rbind, best_models_bic)
+names(best_models_bic_df)[names(best_models_bic_df) == "Name"] <- "Alignment Name"
+names(best_models_bic_df)[names(best_models_bic_df) == "Model"] <- "Best Model"
+
+best_models_plot <- tableGrob(best_models_bic_df, rows = NULL)
+
+png("best_models.png", width = 340, height = 300)
+grid.draw(best_models_plot)
+dev.off()
+
