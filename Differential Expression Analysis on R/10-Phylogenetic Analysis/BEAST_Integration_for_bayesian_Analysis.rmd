@@ -1,0 +1,7 @@
+## Make sure you alkready downloades the BEAST program in your machine before performing this analysis
+
+## Load packages
+library(beastier)
+library(beautier)
+library(tracerer)
+
