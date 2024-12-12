@@ -5,3 +5,54 @@ library(beastier)
 library(beautier)
 library(tracerer)
 
+##Define the function
+generate_xml_files <- function(input_dir, output_dir, best_models_bic_df) {
+if (!dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
+  }
+  nexus_files <- list.files(input_dir, pattern = "\\.nex$", full.names = TRUE)
+  for (file in nexus_files) {
+    file_name <- tools::file_path_sans_ext(basename(file))
+    if (!file_name %in% best_models_bic_df$`Alignment Name`) {
+      message(paste("No model found for alignment:", file_name, "- Skipping"))
+      next
+    }
+   model_string <- best_models_bic_df$`Best Model`[best_models_bic_df$`Alignment Name` == file_name]
+    if (grepl("WAG", model_string)) {
+      base_model <- create_wag_site_model()
+    } else if (grepl("JTT", model_string)) {
+      base_model <- create_jtt_site_model()
+    } else {
+      stop(paste("Unsupported base model in:", model_string))
+    }
+    gamma_categories <- ifelse(grepl("\\+G\\(4\\)", model_string), 4, 1)
+    invariant_sites <- grepl("\\+I", model_string)
+    site_model <- base_model
+    if (gamma_categories > 1) {
+      site_model$gamma <- gamma_categories
+    }
+    if (invariant_sites) {
+      site_model$invariant_sites <- TRUE
+    }
+    clock_model <- create_lognormal_clock_model()  
+    tree_prior <- create_yule_tree_prior()         
+    xml_output_path <- file.path(output_dir, paste0(file_name, ".xml"))
+    create_beast2_input_file(
+      input_filename = file,
+      output_filename = xml_output_path,
+      site_model = site_model,
+      clock_model = clock_model,
+      tree_prior = tree_prior
+    )
+    message(paste("Generated XML for:", file_name))
+  }
+}
+
+## Define Input directory change "PATH_TO_NEXUS" for your nexus files directory path
+input_directory <- "PATH_TO_NEXUS"
+
+## Dedine Output directory change "PATH_TO_OUTPUT" for your output directory path
+output_directory <- "PATH_TO_OUTPUT"
+
+## Execute the function
+generate_xml_files(input_directory, output_directory, model_df)
