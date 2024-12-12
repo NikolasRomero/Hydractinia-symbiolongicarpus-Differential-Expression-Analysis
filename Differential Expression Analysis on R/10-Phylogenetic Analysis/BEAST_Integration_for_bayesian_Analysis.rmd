@@ -5,7 +5,7 @@ library(beastier)
 library(beautier)
 library(tracerer)
 
-##Define the function
+## Create a function to change nexus files to xml files including the model test performed to made ML trees
 generate_xml_files <- function(input_dir, output_dir, best_models_bic_df) {
 if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
